@@ -4,8 +4,7 @@ import { ImageBackground, Platform, ScrollView, StyleSheet, TouchableOpacity, Vi
 import { Button, Text, TextInput, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const HEADER_IMAGE_URL_CLIENT = '[https://images.unsplash.com/photo-1580587771525-78b9dba3b914?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80](https://images.unsplash.com/photo-1580587771525-78b9dba3b914?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80)';
-const USE_IMAGE_PLACEHOLDER = false; // Set to false to use the actual URL above
+const HEADER_IMAGE_URL_CLIENT = 'https://img.freepik.com/free-vector/home-renomation-flat-composition-with-plumber-fixing-pipes-vector-illustration_1284-80776.jpg';
 
 // Consistent type definition with other screens
 interface AppCustomNamedColors {
@@ -33,7 +32,6 @@ export default function ClientRegisterScreen() {
     background: theme.colors.clientPageBg || (theme.dark ? '#111c22' : '#FFFFFF'),
     inputBackground: theme.colors.clientInputBg || (theme.dark ? '#243b47' : '#F0F0F0'),
     placeholderText: theme.colors.clientPlaceholder || (theme.dark ? '#93b6c8' : '#757575'),
-    buttonBackground: theme.colors.clientButtonBg || (theme.dark ? '#19a1e5' : '#007AFF'),
     buttonText: theme.colors.clientButtonText || (theme.dark ? '#141b1f' : '#FFFFFF'),
     textPrimary: theme.colors.onBackground, // General text from main theme
     textSecondary: theme.colors.appTextSecondary || theme.colors.onSurfaceVariant, // Use appTextSecondary
@@ -48,7 +46,7 @@ export default function ClientRegisterScreen() {
     headerImage: {
       flex: 1,
       justifyContent: 'flex-end',
-      backgroundColor: USE_IMAGE_PLACEHOLDER ? theme.colors.surfaceVariant : 'transparent',
+      backgroundColor: theme.colors.surfaceVariant,
     },
     contentContainer: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 20 },
     welcomeTitle: {
@@ -71,18 +69,18 @@ export default function ClientRegisterScreen() {
     registerButton: {
       height: 52,
       borderRadius: 12,
-      backgroundColor: currentClientColors.buttonBackground,
+      backgroundColor: theme.colors.primary,
     },
     registerButtonLabel: {
       fontSize: 16,
       fontWeight: 'bold',
       color: currentClientColors.buttonText,
     },
-        loginTextContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 24, // Space above this text
+    loginTextContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: 24, // Space above this text
     },
     loginTextPrompt: {
       color: currentClientColors.placeholderText, // Using placeholder color for this link text
@@ -122,16 +120,11 @@ export default function ClientRegisterScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.headerImageContainer}>
-          {USE_IMAGE_PLACEHOLDER ? (
-            <View style={styles.headerImage} />
-          ) : (
-            <ImageBackground
-              // source={HEADER_IMAGE_LOCAL} // If using local image
-              source={{ uri: HEADER_IMAGE_URL_CLIENT }}
-              style={styles.headerImage}
-              resizeMode="cover" // Or "contain" depending on your image
-            />
-          )}
+          <ImageBackground
+            source={{ uri: HEADER_IMAGE_URL_CLIENT }}
+            style={styles.headerImage}
+            resizeMode="cover" // Or "contain" depending on your image
+          />
         </View>
 
         <View style={[styles.contentContainer, {flex: 1}] /* Make content take available space */}>
@@ -160,23 +153,21 @@ export default function ClientRegisterScreen() {
             />
           </View>
         </View>
-        {/* Moved Button and Link outside the main content part of ScrollView for distinct bottom placement */}
         <View style={styles.bottomPartContainer}>
-            <Button
-                onPress={() => console.log('Register Client')}
-                style={styles.registerButton}
-                labelStyle={styles.registerButtonLabel}
-                // mode="contained" is not strictly needed if fully styling
-                contentStyle={{ height: '100%' }} // Center text in button
-            >
-                Register
-            </Button>
-            <View style={styles.loginTextContainer}>
-                <Text style={styles.loginTextPrompt}>Already have an account?</Text>
-                <TouchableOpacity onPress={() => router.push('/login')}>
-                    <Text style={styles.loginLink}>Log in</Text>
-                </TouchableOpacity>
-            </View>
+          <Button
+            onPress={() => console.log('Register Client')}
+            style={styles.registerButton}
+            labelStyle={styles.registerButtonLabel}
+            contentStyle={{ height: '100%' }}
+          >
+            Register
+          </Button>
+          <View style={styles.loginTextContainer}>
+            <Text style={styles.loginTextPrompt}>Already have an account?</Text>
+            <TouchableOpacity onPress={() => router.push('/login')}>
+              <Text style={styles.loginLink}>Log in</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>

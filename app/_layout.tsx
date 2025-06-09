@@ -29,7 +29,7 @@ function RootLayoutNav() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <PaperProvider theme={theme}>
         <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="login" />
+          <Stack.Screen name="landing" />
           <Stack.Screen name="provider-register" />
           <Stack.Screen name="client-register" />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

@@ -1,9 +1,9 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { Text, Button, useTheme, Snackbar } from 'react-native-paper';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Appbar, Button, Text, TextInput, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BriefcaseIcon, HouseIcon } from '../components/Icons';
-import { router } from 'expo-router';
+import { ArrowLeftIcon } from '../components/Icons';
 
 interface CustomThemeColors {
   secondaryText: string;
@@ -13,193 +13,136 @@ type ExtendedTheme = ReturnType<typeof useTheme> & { colors: CustomThemeColors &
 
 export default function LoginScreen() {
   const theme = useTheme() as ExtendedTheme;
-  const [selectedRole, setSelectedRole] = useState<string | null>(null);
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const params = useLocalSearchParams();
+  const userType = params.userType || 'unknown';
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const loginButtonColor = theme.colors.primary; // Use specific client button color
 
   const styles = StyleSheet.create({
-    safeArea: {
-      flex: 1,
-      backgroundColor: theme.colors.background,
+    safeArea: { flex: 1, backgroundColor: theme.colors.background },
+    container: { flex: 1 },
+    appbarHeader: { backgroundColor: theme.colors.background, elevation: 0 },
+    appbarContentTitle: { fontSize: 18, fontWeight: 'bold' },
+    scrollView: { flexGrow: 1 },
+    contentContainer: {
+      paddingHorizontal: 24,
+      paddingTop: 16,
+      paddingBottom: 30,
     },
-    container: {
-      flex: 1,
-      justifyContent: 'space-between',
-    },
-    scrollViewContent: {
-      paddingBottom: 20,
-    },
-    topContent: {
-      paddingHorizontal: 16, // px-4
-    },
-    header: {
-      alignItems: 'center',
-      paddingVertical: 16, // p-4
-      paddingBottom: 8,    // pb-2
-    },
-    headerTitle: {
-      color: theme.colors.text, // text-white (in dark mode)
-      fontSize: 18, // text-lg
-      fontWeight: 'bold',
-      textAlign: 'center',
-    },
-    welcomeTitle: {
-      color: theme.colors.text,
+    headline: {
+      color: theme.colors.onBackground,
       fontSize: 28,
       fontWeight: 'bold',
-      textAlign: 'center',
-      paddingBottom: 12, // pb-3
-      paddingTop: 20,    // pt-5
+      marginBottom: 32, // More space after headline
     },
-    welcomeSubtitle: {
-      color: theme.colors.text, // Assuming primary text color, or use theme.colors.secondaryText for lighter
-      fontSize: 16,
-      textAlign: 'center',
-      paddingBottom: 12, // pb-3
-      paddingTop: 4,     // pt-1
-    },
-    roleSelector: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 16, // gap-4
-      backgroundColor: theme.colors.background, // or theme.colors.surface for cards
-      paddingHorizontal: 16, // px-4
-      minHeight: 72,
-      paddingVertical: 8, // py-2
-      borderRadius: 8, // For selection indication later
-      marginBottom: 10, // Spacing between role selectors
-      borderWidth: 2,
-      borderColor: 'transparent',
-    },
-    selectedRole: {
-      borderColor: theme.colors.primary,
-    },
-    iconContainer: {
-      backgroundColor: theme.colors.surfaceVariant, // bg-[#2b3940]
-      width: 48, // size-12
-      height: 48,
-      borderRadius: 8, // rounded-lg
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexShrink: 0,
-    },
-    roleTextContainer: {
-      flex: 1, // Allow text to take available space
-    },
-    roleTitle: {
-      color: theme.colors.text,
-      fontSize: 16,
-      fontWeight: '500', // font-medium
-    },
-    roleDescription: {
-      color: theme.colors.secondaryText, // text-[#9db3be]
+    inputContainer: { marginBottom: 18 },
+    textInput: { backgroundColor: theme.colors.surfaceVariant },
+    forgotPasswordLink: {
+      color: theme.colors.primary, // Use a distinct, interactive color
       fontSize: 14,
+      fontWeight: 'bold',
+      textAlign: 'left',
+      paddingVertical: 8, // Make it easier to tap
     },
     bottomContent: {
-      paddingHorizontal: 16, // px-4
-      paddingVertical: 12,   // py-3
+      paddingHorizontal: 24,
+      paddingVertical: 20,
+      marginTop: 'auto', // Push to the bottom
     },
-    continueButton: {
-      borderRadius: 24, // rounded-full
-      // backgroundColor will be handled by Button's mode="contained" and theme
+    loginButton: {
+      height: 52,
+      borderRadius: 26, // Fully rounded
+      backgroundColor: loginButtonColor, // Specific blue color for login button
     },
-    continueButtonContent: {
-      height: 48,
-    },
-    continueButtonLabel: {
-      fontSize: 16, // text-base
+    loginButtonLabel: {
+      fontSize: 16,
       fontWeight: 'bold',
-      // color will be theme.colors.onPrimary
-    },
-    bottomSpacer: {
-      height: 20, // h-5
-      backgroundColor: theme.colors.background,
-    },
-    snackbar: {
-      backgroundColor: theme.colors.errorContainer || theme.colors.error,
-    },
-    snackbarText: {
-      color: theme.colors.onErrorContainer || theme.colors.onError,
+      color: theme.colors.appTextSecondary,
     },
   });
 
-  const handleRoleSelect = (role: string) => {
-    setSelectedRole(role === selectedRole ? null : role);
+  const textInputTheme = {
+    colors: {
+      primary: theme.colors.primary,
+      outline: theme.colors.surfaceVariant,
+      onSurface: theme.colors.appTextPrimary || theme.colors.onSurface,
+      onSurfaceVariant: theme.colors.appTextSecondary || theme.colors.onSurfaceVariant,
+    }
   };
 
-  const handleContinue = () => {
-    if (!selectedRole) {
-      setSnackbarVisible(true);
-      return;
-    }
-    if (selectedRole === 'provider') {
-      router.push('/provider-register');
-    } else if (selectedRole === 'client') {
-      router.push('/client-register');
-    }
+  const commonInputProps = {
+    mode: "outlined" as "outlined",
+    style: styles.textInput,
+    outlineStyle: { borderRadius: 12 },
+    textColor: theme.colors.appTextPrimary || theme.colors.onSurface,
+    theme: textInputTheme,
+  };
+
+  const handleLogin = () => {
+    console.log('Login attempt:');
+    console.log('  Email:', email);
+    console.log('  Password:', password);
+    console.log('  User Type:', userType);
   };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <View style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollViewContent}>
-          <View style={styles.topContent}>
-            <View style={styles.header}>
-              <Text style={styles.headerTitle}>Confia</Text>
-            </View>
-            <Text style={styles.welcomeTitle}>Welcome to Confia</Text>
-            <Text style={styles.welcomeSubtitle}>Choose your role to get started</Text>
+      <Appbar.Header style={styles.appbarHeader} mode="center-aligned" dense={true} statusBarHeight={0}>
+        <Appbar.Action
+          icon={() => <ArrowLeftIcon color={theme.colors.onBackground} size={24} />}
+          onPress={() => router.back()}
+          rippleColor="transparent"
+        />
+        <Appbar.Content title="Confia" color={theme.colors.onBackground} titleStyle={styles.appbarContentTitle}/>
+        <View style={{ width: 48 }} />{/* Spacer */}
+      </Appbar.Header>
 
-            <TouchableOpacity
-              style={[styles.roleSelector, selectedRole === 'provider' && styles.selectedRole]}
-              onPress={() => handleRoleSelect('provider')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.iconContainer}>
-                <BriefcaseIcon color={selectedRole === 'provider' ? theme.colors.primary : theme.colors.text} />
-              </View>
-              <View style={styles.roleTextContainer}>
-                <Text style={[styles.roleTitle, selectedRole === 'provider' && { color: theme.colors.primary }]}>Provider</Text>
-                <Text style={styles.roleDescription}>Offer your services and connect with clients</Text>
-              </View>
-            </TouchableOpacity>
+      <View style={[styles.container, { paddingBottom: 20 }]}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.contentContainer}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.headline}>Welcome back</Text>
 
-            <TouchableOpacity
-              style={[styles.roleSelector, selectedRole === 'client' && styles.selectedRole]}
-              onPress={() => handleRoleSelect('client')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.iconContainer}>
-                <HouseIcon color={selectedRole === 'client' ? theme.colors.primary : theme.colors.text} />
-              </View>
-              <View style={styles.roleTextContainer}>
-                <Text style={[styles.roleTitle, selectedRole === 'client' && { color: theme.colors.primary }]}>Client</Text>
-                <Text style={styles.roleDescription}>Find and book trusted professionals for your needs</Text>
-              </View>
-            </TouchableOpacity>
+          <View style={styles.inputContainer}>
+            <TextInput
+              label="Email or phone"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              {...commonInputProps}
+            />
           </View>
+          <View style={styles.inputContainer}>
+            <TextInput
+              label="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              {...commonInputProps}
+            />
+          </View>
+          <TouchableOpacity onPress={() => console.log('Forgot Password pressed')}>
+            <Text style={styles.forgotPasswordLink}>Forgot password?</Text>
+          </TouchableOpacity>
         </ScrollView>
 
         <View style={styles.bottomContent}>
           <Button
-            mode="contained"
-            onPress={handleContinue}
-            style={styles.continueButton}
-            contentStyle={styles.continueButtonContent}
-            labelStyle={styles.continueButtonLabel}
+            onPress={handleLogin}
+            style={styles.loginButton}
+            labelStyle={styles.loginButtonLabel}
+            contentStyle={{ height: '100%' }}
           >
-            Continue
+            Log in
           </Button>
-          <View style={styles.bottomSpacer} />
         </View>
       </View>
-      <Snackbar
-        visible={snackbarVisible}
-        onDismiss={() => setSnackbarVisible(false)}
-        duration={Snackbar.DURATION_SHORT}
-        style={{ backgroundColor: theme.colors.surfaceVariant }}
-      >
-        <Text style={{color: theme.colors.text}}>Please select a role to continue.</Text>
-      </Snackbar>
     </SafeAreaView>
   );
 }
