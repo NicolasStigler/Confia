@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  Dimensions,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -33,12 +34,14 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  const screenWidth = Dimensions.get('window').width;
+
   const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: theme.colors.background },
     keyboardAvoidingView: { flex: 1 },
     appbarHeader: { backgroundColor: theme.colors.background, elevation: 0 },
     appbarContentTitle: { fontSize: 18, fontWeight: 'bold', color: theme.colors.onBackground },
-    inlineImage: { width: '100%', height: 200, resizeMode: 'cover' },
+    inlineImage: { width: screenWidth, height: 200, resizeMode: 'cover', marginLeft: -24 },
     innerContainer: { flex: 1 },
     scrollView: { flex: 1 },
     contentContainerScrollView: {
