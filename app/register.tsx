@@ -21,7 +21,6 @@ type ExtendedAppTheme = ReturnType<typeof useTheme> & {
   colors: AppCustomNamedColors & ReturnType<typeof useTheme>['colors'];
 };
 
-
 export default function ClientRegisterScreen() {
   const theme = useTheme() as ExtendedAppTheme;
   const params = useLocalSearchParams();
@@ -88,6 +87,17 @@ export default function ClientRegisterScreen() {
       fontSize: 16,
       fontWeight: 'bold',
       color: theme.colors.appTextSecondary || theme.colors.onPrimary,
+    },
+    nameRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 18,
+    },
+    nameInput: {
+      width: '37%',
+    },
+    ageInput: {
+      width: '18%',
     },
     loginTextContainer: {
       flexDirection: 'row',
@@ -169,15 +179,32 @@ export default function ClientRegisterScreen() {
           <Text style={styles.welcomeSubtitle}>
             {isWorker ? "Join our network of trusted professionals." : "Find trusted professionals for your home service needs."}
           </Text>
-
-          <View style={styles.inputContainer}>
-            <TextInput label="First Name" value={firstname} onChangeText={setFirstname} autoCapitalize="words" {...commonInputPropsClient} />
-          </View>
-          <View style={styles.inputContainer}>
-            <TextInput label="Last Name" value={lastname} onChangeText={setLastname} autoCapitalize="words" {...commonInputPropsClient} />
-          </View>
-          <View style={styles.inputContainer}>
-            <TextInput label="Age" value={age} onChangeText={setAge} keyboardType="numeric" {...commonInputPropsClient} />
+          <View style={styles.nameRow}>
+            <View style={styles.nameInput}>
+              <TextInput
+                label="First Name"
+                value={firstname}
+                onChangeText={setFirstname}
+                {...commonInputPropsClient}
+              />
+            </View>
+            <View style={styles.nameInput}>
+              <TextInput
+                label="Last Name"
+                value={lastname}
+                onChangeText={setLastname}
+                {...commonInputPropsClient}
+              />
+            </View>
+            <View style={styles.ageInput}>
+              <TextInput
+                label="Age"
+                value={age}
+                onChangeText={setAge}
+                keyboardType="numeric"
+                {...commonInputPropsClient}
+              />
+            </View>
           </View>
           <View style={styles.inputContainer}>
             <TextInput label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" {...commonInputPropsClient} />
