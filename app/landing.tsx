@@ -132,9 +132,9 @@ export default function LandingScreen() {
       return;
     }
     if (selectedRole === 'provider') {
-      router.push('/provider-register');
+      router.push({ pathname: '/register', params: { isWorker: 'true' } });
     } else if (selectedRole === 'client') {
-      router.push('/client-register');
+      router.push({ pathname: '/register', params: { isWorker: 'false' } });
     }
   };
 

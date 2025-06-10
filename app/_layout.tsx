@@ -30,8 +30,7 @@ function RootLayoutNav() {
       <PaperProvider theme={theme}>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="landing" />
-          <Stack.Screen name="provider-register" />
-          <Stack.Screen name="client-register" />
+          <Stack.Screen name="register" />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
         </Stack>
