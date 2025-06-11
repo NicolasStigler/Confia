@@ -10,11 +10,21 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { Appbar, Button, Text, TextInput, useTheme } from 'react-native-paper';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  Appbar,
+  Button,
+  Text,
+  TextInput,
+  useTheme
+} from 'react-native-paper';
+import {
+  SafeAreaView,
+  useSafeAreaInsets
+} from 'react-native-safe-area-context';
 import { ArrowLeftIcon } from '../components/Icons';
 
-const IMAGE_URL = 'https://img.freepik.com/free-vector/home-renomation-flat-composition-with-plumber-fixing-pipes-vector-illustration_1284-80776.jpg';
+const IMAGE_URL =
+  'https://img.freepik.com/free-vector/home-renomation-flat-composition-with-plumber-fixing-pipes-vector-illustration_1284-80776.jpg';
 
 interface CustomThemeColors {
   secondaryText: string;
@@ -23,156 +33,199 @@ interface CustomThemeColors {
   surfaceVariant?: string;
   onBackground?: string;
   background?: string;
+  disabledButton?: string;
 }
 
-type ExtendedTheme = ReturnType<typeof useTheme> & { colors: CustomThemeColors & ReturnType<typeof useTheme>['colors'] };
+type ExtendedTheme = ReturnType<typeof useTheme> & {
+  colors: CustomThemeColors & ReturnType<typeof useTheme>['colors'];
+};
 
 export default function LoginScreen() {
   const theme = useTheme() as ExtendedTheme;
   const insets = useSafeAreaInsets();
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
   const screenWidth = Dimensions.get('window').width;
 
+  const background = theme.colors.background;
+  const onBackground = theme.colors.onBackground || theme.colors.onSurface;
+  const surfaceVariant = theme.colors.surfaceVariant || theme.colors.surface;
+  const inputBg = surfaceVariant;
+  const disabledColor = theme.colors.disabledButton || '#888888';
+  const buttonTextColor = theme.colors.appTextSecondary || theme.colors.onPrimary;
+
+  const isFormValid = email.length > 0 && password.length > 0;
+
   const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: theme.colors.background },
-    keyboardAvoidingView: { flex: 1 },
-    appbarHeader: { backgroundColor: theme.colors.background, elevation: 0 },
-    appbarContentTitle: { fontSize: 18, fontWeight: 'bold', color: theme.colors.onBackground },
-    inlineImage: { width: screenWidth, height: 200, resizeMode: 'cover', marginLeft: -24 },
+    safeArea: {
+      flex: 1,
+      backgroundColor: background,
+      paddingTop: insets.top
+    },
+    appbarHeader: { backgroundColor: background, elevation: 0 },
+    appbarTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: onBackground
+    },
+    inlineImage: {
+      width: screenWidth,
+      height: 200,
+      resizeMode: 'cover',
+      marginTop: -24,
+      marginLeft: -24,
+      marginBottom: 24
+    },
     innerContainer: { flex: 1 },
     scrollView: { flex: 1 },
-    contentContainerScrollView: {
+    scrollContent: {
       paddingHorizontal: 24,
       paddingTop: 24,
       paddingBottom: 20,
-      flexGrow: 1,
+      flexGrow: 1
     },
     headline: {
-      color: theme.colors.onBackground,
+      color: onBackground,
       fontSize: 28,
       fontWeight: 'bold',
       textAlign: 'center',
-      paddingTop: 16,
-      marginBottom: 16,
+      marginBottom: 16
     },
-    inputContainer: { marginBottom: 18, width: '100%' }, // Ensure inputs take full width
-    textInput: { backgroundColor: theme.colors.surfaceVariant },
+    inputContainer: { marginBottom: 18, width: '100%' },
+    textInput: { backgroundColor: inputBg },
     forgotPasswordLink: {
       color: theme.colors.primary,
       fontSize: 14,
       fontWeight: 'bold',
-      textAlign: 'left', // Keep this left aligned or change to center if needed
-      paddingVertical: 8,
-      width: '100%', // Ensure it aligns with inputs if centered
+      paddingVertical: 8
     },
     bottomContent: {
       paddingHorizontal: 24,
       paddingVertical: 16,
       paddingBottom: Platform.OS === 'ios' ? 30 : 24,
       borderTopWidth: Platform.OS === 'android' ? 1 : 0,
-      borderTopColor: theme.colors.surfaceVariant,
-      backgroundColor: theme.colors.background,
+      borderTopColor: surfaceVariant,
+      backgroundColor: background
     },
     loginButton: {
       height: 52,
       borderRadius: 26,
-      backgroundColor: theme.colors.primary,
+      backgroundColor: isFormValid
+        ? theme.colors.primary
+        : disabledColor
     },
-    loginButtonLabel: {
+    loginLabel: {
       fontSize: 16,
       fontWeight: 'bold',
-      color: theme.colors.appTextSecondary || theme.colors.onPrimary,
-    },
+      color: buttonTextColor
+    }
   });
 
-  const textInputTheme = {
+  const inputTheme = {
     colors: {
       primary: theme.colors.primary,
-      outline: theme.colors.surfaceVariant,
+      outline: surfaceVariant,
       onSurface: theme.colors.appTextPrimary || theme.colors.onSurface,
-      onSurfaceVariant: theme.colors.appTextSecondary || theme.colors.onSurfaceVariant,
+      onSurfaceVariant:
+        theme.colors.appTextSecondary || theme.colors.onSurfaceVariant
     }
   };
 
-  const commonInputProps = {
-    mode: "outlined" as "outlined",
+  const commonInput = {
+    mode: 'outlined' as const,
     style: styles.textInput,
     outlineStyle: { borderRadius: 12 },
     textColor: theme.colors.appTextPrimary || theme.colors.onSurface,
-    theme: textInputTheme,
+    theme: inputTheme
   };
 
   const handleLogin = () => {
-    const loginData = {
-      email,
-      password,
-    };
-    console.log('Login User:', loginData);
+    if (!isFormValid) return;
+    console.log('Login User:', { email, password });
   };
 
   const appbarHeight = 56;
-  const keyboardVerticalOffsetValue = Platform.OS === 'ios' ? appbarHeight : 0;
+  const keyboardOffset = Platform.OS === 'ios' ? appbarHeight : 0;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <Appbar.Header style={styles.appbarHeader} mode="center-aligned" dense={true} statusBarHeight={0}>
+    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+      <Appbar.Header
+        style={styles.appbarHeader}
+        mode="center-aligned"
+        dense
+        statusBarHeight={0}
+      >
         <Appbar.Action
-          icon={() => <ArrowLeftIcon color={theme.colors.onBackground || '#000000'} size={24} />}
+          icon={() => (
+            <ArrowLeftIcon color={onBackground} size={24} />
+          )}
           onPress={() => router.back()}
           rippleColor="transparent"
         />
-        <Appbar.Content title="Log In" color={theme.colors.onBackground} titleStyle={styles.appbarContentTitle}/>
+        <Appbar.Content
+          title="Log In"
+          color={onBackground}
+          titleStyle={styles.appbarTitle}
+        />
         <View style={{ width: 48 }} />
       </Appbar.Header>
+
       <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={keyboardVerticalOffsetValue}
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={keyboardOffset}
       >
         <View style={styles.innerContainer}>
-            <ScrollView
+          <ScrollView
             style={styles.scrollView}
-            contentContainerStyle={styles.contentContainerScrollView}
+            contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
-            >
-            <Image source={{ uri: IMAGE_URL }} style={styles.inlineImage} />
+          >
+            <Image
+              source={{ uri: IMAGE_URL }}
+              style={styles.inlineImage}
+            />
             <Text style={styles.headline}>Welcome back</Text>
             <View style={styles.inputContainer}>
-                <TextInput
+              <TextInput
                 label="Email or phone"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                {...commonInputProps}
-                />
+                {...commonInput}
+              />
             </View>
             <View style={styles.inputContainer}>
-                <TextInput
+              <TextInput
                 label="Password"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
-                {...commonInputProps}
-                />
+                {...commonInput}
+              />
             </View>
-            <TouchableOpacity onPress={() => console.log('Forgot Password pressed')} style={{width: '100%'}}>
-                <Text style={styles.forgotPasswordLink}>Forgot password?</Text>
-            </TouchableOpacity>
-            </ScrollView>
-            <View style={styles.bottomContent}>
+            <View>
+              <TouchableOpacity
+                onPress={() => console.log('Forgot Password pressed')}
+              >
+                <Text style={styles.forgotPasswordLink}>
+                  Forgot password?
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+          <View style={styles.bottomContent}>
             <Button
-                onPress={handleLogin}
-                style={styles.loginButton}
-                labelStyle={styles.loginButtonLabel}
-                contentStyle={{ height: '100%' }}
+              onPress={handleLogin}
+              disabled={!isFormValid}
+              style={styles.loginButton}
+              labelStyle={styles.loginLabel}
+              contentStyle={{ height: '100%' }}
             >
-                Log in
+              Log in
             </Button>
-            </View>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
