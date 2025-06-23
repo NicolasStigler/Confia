@@ -66,7 +66,7 @@ export default function ClientRegisterScreen() {
     setAge(digits);
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!isFormValid) return;
     const data = {
       firstname,
@@ -74,10 +74,32 @@ export default function ClientRegisterScreen() {
       age: parseInt(age, 10),
       email,
       password,
-      address,
-      isWorker: isWorker.toString()
+      direccion: address,
+      isWorker: isWorker.toString(),
     };
-    console.log('Registering User:', data);
+
+    try {
+      const response = await fetch('http://192.168.1.77:8080/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Registration failed');
+      }
+
+      const result = await response.json();
+      console.log('Registration successful:', result);
+      // Save result.token as needed (e.g., AsyncStorage)
+      // Navigate to the next screen or show success message
+    } catch (error) {
+      console.error('Registration error:', error.message);
+      // Handle error (show feedback to user)
+    }
   };
 
   const styles = StyleSheet.create({

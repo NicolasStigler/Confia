@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  Alert,
   Dimensions,
   Image,
   KeyboardAvoidingView,
@@ -139,9 +140,35 @@ export default function LoginScreen() {
     theme: inputTheme
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!isFormValid) return;
-    console.log('Login User:', { email, password });
+
+    try {
+      const response = await fetch('http://192.168.1.77:8080/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Login failed');
+      }
+
+      const result = await response.json();
+      console.log('Login successful:', result);
+      if (result.token) {
+        // Save the token as needed (e.g., AsyncStorage)
+        // Navigate to the next screen, e.g., Home screen
+        router.push('/(tabs)/index');
+      }
+    } catch (error) {
+      console.error('Login error:', error.message);
+      // Handle error (show feedback to user)
+      Alert.alert('Login Failed', 'Wrong credentials, please try again.');
+    }
   };
 
   const appbarHeight = 56;
