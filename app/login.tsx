@@ -22,6 +22,7 @@ import {
   SafeAreaView,
   useSafeAreaInsets
 } from 'react-native-safe-area-context';
+import { fetchLogin } from '../api/api';
 import { ArrowLeftIcon } from '../components/Icons';
 
 const IMAGE_URL =
@@ -144,29 +145,16 @@ export default function LoginScreen() {
     if (!isFormValid) return;
 
     try {
-      const response = await fetch('http://192.168.1.77:8080/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Login failed');
+      const role = await fetchLogin({ email, password });
+      if (role == 'ROLE_CLIENT') {
+        router.push('(client)');
+      } else if (role == 'ROLE_WORKER') {
+        router.push('(provider)');
+      } else {
+        Alert.alert('Login Failed', 'No token received. Please try again.');
       }
-
-      const result = await response.json();
-      console.log('Login successful:', result);
-      if (result.token) {
-        // Save the token as needed (e.g., AsyncStorage)
-        // Navigate to the next screen, e.g., Home screen
-        router.push('/(tabs)/index');
-      }
-    } catch (error) {
-      console.error('Login error:', error.message);
-      // Handle error (show feedback to user)
+    } catch (error: any) {
+      console.error('Login error:', error?.message || error);
       Alert.alert('Login Failed', 'Wrong credentials, please try again.');
     }
   };

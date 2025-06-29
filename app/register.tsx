@@ -68,37 +68,29 @@ export default function ClientRegisterScreen() {
 
   const handleRegister = async () => {
     if (!isFormValid) return;
-    const data = {
+    const data: any = {
       firstname,
       lastname,
       age: parseInt(age, 10),
       email,
       password,
-      direccion: address,
       isWorker: isWorker.toString(),
     };
 
+    if (!isWorker) {
+      data.direccion = address;
+    }
+
     try {
-      const response = await fetch('http://192.168.1.77:8080/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Registration failed');
+      const role = await fetchRegister(data);
+      if (role) {
+        router.push('(client)');
+      } else {
+        alert('Registration failed: no token received');
       }
-
-      const result = await response.json();
-      console.log('Registration successful:', result);
-      // Save result.token as needed (e.g., AsyncStorage)
-      // Navigate to the next screen or show success message
-    } catch (error) {
-      console.error('Registration error:', error.message);
-      // Handle error (show feedback to user)
+    } catch (error: any) {
+      console.error('Registration error:', error?.message || error);
+      alert('Registration failed: ' + (error?.message || 'unknown error'));
     }
   };
 
