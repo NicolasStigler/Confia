@@ -2,15 +2,24 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { fetchGetServicios } from '../../api/api'; // Adjust path as needed
+import { fetchGetServicios } from '../../api/api'; // Use the correct path for your project
 
 interface Service {
   id: string;
   name: string;
-  image?: any; // You can adjust this type if you know your backend returns image URLs
+  image?: string; // Adjust if your backend returns image URLs
 }
 
 export default function HomeScreen() {
@@ -24,9 +33,15 @@ export default function HomeScreen() {
         setLoading(true);
         setError(null);
         const data = await fetchGetServicios();
-        // If your backend returns an array of services with id, name, and maybe an image field,
-        // you may need to map or adapt it here.
-        setServices(data || []);
+        // If your backend returns an array of plain strings, map to { name }
+        if (Array.isArray(data) && typeof data[0] === 'string') {
+          setServices(data.map((name, idx) => ({
+            id: String(idx),
+            name,
+          })));
+        } else {
+          setServices(data || []);
+        }
       } catch (e: any) {
         setError('Error fetching services');
       } finally {
@@ -36,11 +51,18 @@ export default function HomeScreen() {
     fetchServices();
   }, []);
 
+  const handleServicePress = (serviceName: string) => {
+    router.push({ pathname: '/service-details', params: { serviceName } });
+  };
+
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <ThemedView style={styles.container}>
         <View style={styles.header}>
-          <ThemedText type="title" style={styles.headerTitle}>Confia</ThemedText>
+          <ThemedText type="title" style={styles.headerTitle}>
+            Confia
+          </ThemedText>
           <TouchableOpacity>
             <Ionicons name="notifications-outline" size={24} color={Platform.OS === 'ios' ? '#000' : '#fff'} />
           </TouchableOpacity>
@@ -57,25 +79,36 @@ export default function HomeScreen() {
 
         <ScrollView showsVerticalScrollIndicator={false}>
           <ThemedView style={styles.sectionContainer}>
-            <ThemedText type="subtitle" style={styles.sectionTitle}>Featured Services</ThemedText>
+            <ThemedText type="subtitle" style={styles.sectionTitle}>
+              Featured Services
+            </ThemedText>
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : error ? (
-              <ThemedText style={{ color: 'red', marginBottom: 16 }}>{error}</ThemedText>
+              <ThemedText style={{ color: 'red', marginBottom: 16 }}>
+                {error}
+              </ThemedText>
             ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScroll}
+              >
                 {services.map((service, idx) => (
-                  <TouchableOpacity key={service.id ?? service.name ?? idx} style={styles.serviceCard}>
-                    {/* If you have images from backend use <Image source={{ uri: service.image }} ... */}
+                  <TouchableOpacity
+                    key={service.id ?? service.name ?? idx}
+                    style={styles.serviceCard}
+                    onPress={() => handleServicePress(service.name)}
+                  >
                     <Image
-                      source={
-                        service.image
-                          ? { uri: service.image }
-                          : { uri: `https://source.unsplash.com/400x300/?${encodeURIComponent(service.name)}` }
-                      }
+                      source={{
+                        uri: service.image
+                      }}
                       style={styles.serviceImage}
                     />
-                    <ThemedText style={styles.serviceTitle}>{service.name}</ThemedText>
+                    <ThemedText style={styles.serviceTitle}>
+                      {service.name}
+                    </ThemedText>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -83,13 +116,24 @@ export default function HomeScreen() {
           </ThemedView>
 
           <ThemedView style={styles.sectionContainer}>
-            <ThemedText type="subtitle" style={styles.sectionTitle}>Special Offers</ThemedText>
+            <ThemedText type="subtitle" style={styles.sectionTitle}>
+              Special Offers
+            </ThemedText>
             <TouchableOpacity style={styles.specialOfferCard}>
-              <Image source={require('@/assets/images/special-offer.png')} style={styles.specialOfferImage} />
+              <Image
+                source={require('@/assets/images/special-offer.png')}
+                style={styles.specialOfferImage}
+              />
               <View style={styles.specialOfferTextContainer}>
-                <ThemedText type="defaultSemiBold" style={styles.specialOfferMainText}>Get 20% off your first booking</ThemedText>
-                <ThemedText style={styles.specialOfferSubText}>Use code WELCOME20 at checkout</ThemedText>
-                <ThemedText style={styles.specialOfferSubText}>Limited time offer</ThemedText>
+                <ThemedText type="defaultSemiBold" style={styles.specialOfferMainText}>
+                  Get 20% off your first booking
+                </ThemedText>
+                <ThemedText style={styles.specialOfferSubText}>
+                  Use code WELCOME20 at checkout
+                </ThemedText>
+                <ThemedText style={styles.specialOfferSubText}>
+                  Limited time offer
+                </ThemedText>
               </View>
             </TouchableOpacity>
           </ThemedView>
@@ -113,7 +157,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 10 : 10, // SafeAreaView handles the top inset
+    paddingTop: Platform.OS === 'ios' ? 10 : 10,
     paddingBottom: 10,
   },
   headerTitle: {

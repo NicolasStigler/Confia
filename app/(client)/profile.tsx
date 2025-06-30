@@ -1,192 +1,244 @@
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { fetchGetServicios } from '../../api/api'; // Adjust path as needed
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import * as SecureStore from "expo-secure-store";
+import React, { useEffect, useState } from "react";
+import {
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { fetchGetClientMe } from "../../api/api"; // Adjust path as needed
+import NoPhotoImage from "../../assets/images/avatar.png"; // Fallback image
 
-interface Service {
-  id: string;
-  name: string;
-  image?: any; // You can adjust this type if you know your backend returns image URLs
-}
-
-export default function HomeScreen() {
-  const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+export default function Profile() {
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [client, setClient] = useState<any>(null);
+  const navigation = useNavigation();
 
   useEffect(() => {
-    const fetchServices = async () => {
+    const loadClientData = async () => {
       try {
-        setLoading(true);
-        setError(null);
-        const data = await fetchGetServicios();
-        // If your backend returns an array of services with id, name, and maybe an image field,
-        // you may need to map or adapt it here.
-        setServices(data || []);
-      } catch (e: any) {
-        setError('Error fetching services');
-      } finally {
-        setLoading(false);
+        const data = await fetchGetClientMe();
+        setClient(data);
+      } catch (error) {
+        Alert.alert("Error", "No se pudo cargar la información del perfil.");
       }
     };
-    fetchServices();
+    loadClientData();
   }, []);
 
+  const handleLogout = async () => {
+    await SecureStore.deleteItemAsync("token");
+    navigation.navigate("Login" as never);
+  };
+
+  if (!client) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+        <View style={styles.loadingContainer}>
+          <Text style={{ color: "#fff" }}>Cargando...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <ThemedView style={styles.container}>
-        <View style={styles.header}>
-          <ThemedText type="title" style={styles.headerTitle}>Confia</ThemedText>
-          <TouchableOpacity>
-            <Ionicons name="notifications-outline" size={24} color={Platform.OS === 'ios' ? '#000' : '#fff'} />
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        <View style={styles.headerContainer}>
+          <TouchableOpacity style={styles.headerBack} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={28} color="white" />
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>Account</Text>
+          <View style={{ width: 32 }} />
         </View>
 
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
-          <TextInput
-            placeholder="Search for services"
-            placeholderTextColor="#888"
-            style={styles.searchInput}
-          />
+        <View style={styles.avatarSection}>
+          <View style={styles.avatarCircle}>
+            <Image
+              source={client.profileImage ? { uri: client.profileImage } : NoPhotoImage}
+              style={styles.avatar}
+              resizeMode="cover"
+            />
+          </View>
+          <Text style={styles.profileName}>{client.firstname} {client.lastname}</Text>
+          <Text style={styles.memberSince}>
+            Miembro desde {client.createdAt ? new Date(client.createdAt).getFullYear() : "2025"}
+          </Text>
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <ThemedView style={styles.sectionContainer}>
-            <ThemedText type="subtitle" style={styles.sectionTitle}>Featured Services</ThemedText>
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : error ? (
-              <ThemedText style={{ color: 'red', marginBottom: 16 }}>{error}</ThemedText>
-            ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
-                {services.map((service, idx) => (
-                  <TouchableOpacity key={service.id ?? service.name ?? idx} style={styles.serviceCard}>
-                    {/* If you have images from backend use <Image source={{ uri: service.image }} ... */}
-                    <Image
-                      source={
-                        service.image
-                          ? { uri: service.image }
-                          : { uri: `https://source.unsplash.com/400x300/?${encodeURIComponent(service.name)}` }
-                      }
-                      style={styles.serviceImage}
-                    />
-                    <ThemedText style={styles.serviceTitle}>{service.name}</ThemedText>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            )}
-          </ThemedView>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Personal Information</Text>
+          <ProfileRow label="Email" value={client.email || "-"} />
+          <ProfileRow label="Phone Number" value={client.phone || "-"} />
+          <ProfileRow label="Address" value={client.direccion || "-"} />
+          <ProfileRow label="Distrito" value={client.distrito_vive?.name || "-"} />
+          <ProfileRow label="Edad" value={client.age ? client.age.toString() : "-"} />
+        </View>
 
-          <ThemedView style={styles.sectionContainer}>
-            <ThemedText type="subtitle" style={styles.sectionTitle}>Special Offers</ThemedText>
-            <TouchableOpacity style={styles.specialOfferCard}>
-              <Image source={require('@/assets/images/special-offer.png')} style={styles.specialOfferImage} />
-              <View style={styles.specialOfferTextContainer}>
-                <ThemedText type="defaultSemiBold" style={styles.specialOfferMainText}>Get 20% off your first booking</ThemedText>
-                <ThemedText style={styles.specialOfferSubText}>Use code WELCOME20 at checkout</ThemedText>
-                <ThemedText style={styles.specialOfferSubText}>Limited time offer</ThemedText>
-              </View>
-            </TouchableOpacity>
-          </ThemedView>
-        </ScrollView>
-      </ThemedView>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>App Settings</Text>
+          <View style={styles.settingRow}>
+            <Text style={styles.labelText}>Notifications</Text>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={setNotificationsEnabled}
+              thumbColor={notificationsEnabled ? "#fff" : "#fff"}
+              trackColor={{ false: "#1C2830", true: "#1C2830" }}
+            />
+          </View>
+          <View style={styles.settingRow}>
+            <Text style={styles.labelText}>Language</Text>
+            <Text style={styles.valueText}>Spanish</Text>
+          </View>
+        </View>
+
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={22} color="#F87171" style={{ marginRight: 10 }} />
+          <Text style={styles.logoutText}>Log out</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function ProfileRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <View style={styles.row}>
+      <View>
+        <Text style={styles.labelText}>{label}</Text>
+        <Text style={styles.valueText}>{value}</Text>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0D1117',
+    backgroundColor: "#111A1F",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#111A1F",
   },
   container: {
-    flex: 1,
-    backgroundColor: '#0D1117',
+    paddingHorizontal: 18,
+    maxWidth: 480,
+    alignSelf: "center",
+    width: "100%",
+    backgroundColor: "#111A1F",
+    minHeight: "100%",
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 10 : 10, // SafeAreaView handles the top inset
-    paddingBottom: 10,
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+    minHeight: 52,
+  },
+  headerBack: {
+    paddingRight: 12,
+    width: 32,
   },
   headerTitle: {
-    color: '#FFFFFF',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1F2937',
-    borderRadius: 25,
-    marginHorizontal: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    marginBottom: 20,
-  },
-  searchIcon: {
-    marginRight: 10,
-  },
-  searchInput: {
+    fontSize: 26,
+    color: "#fff",
+    fontWeight: "600",
+    textAlign: "center",
     flex: 1,
-    color: '#FFFFFF',
-    fontSize: 16,
+    lineHeight: 32,
   },
-  sectionContainer: {
-    paddingHorizontal: 20,
+  avatarSection: {
+    alignItems: "center",
+    marginTop: 12,
     marginBottom: 20,
-    backgroundColor: 'transparent',
+  },
+  avatarCircle: {
+    width: 136,
+    height: 136,
+    borderRadius: 68,
+    backgroundColor: "#F7EADB",
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  avatar: {
+    width: 136,
+    height: 136,
+    borderRadius: 68,
+  },
+  profileName: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#fff",
+    marginBottom: 4,
+  },
+  memberSince: {
+    fontSize: 18,
+    color: "#B9D4E8",
+    fontWeight: "400",
+    marginBottom: 0,
+  },
+  section: {
+    marginBottom: 30,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#FFFFFF',
+    fontWeight: "700",
+    color: "#fff",
+    marginBottom: 18,
   },
-  horizontalScroll: {
-    paddingRight: 20,
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 26,
   },
-  serviceCard: {
-    backgroundColor: '#1F2937',
-    borderRadius: 15,
-    width: 150,
-    marginRight: 15,
-    overflow: 'hidden',
-  },
-  serviceImage: {
-    width: '100%',
-    height: 100,
-  },
-  serviceTitle: {
-    padding: 10,
-    color: '#FFFFFF',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  specialOfferCard: {
-    backgroundColor: '#1F2937',
-    borderRadius: 15,
-    overflow: 'hidden',
-  },
-  specialOfferImage: {
-    width: '100%',
-    height: 180,
-  },
-  specialOfferTextContainer: {
-    padding: 15,
-  },
-  specialOfferMainText: {
-    color: '#FFFFFF',
+  labelText: {
     fontSize: 18,
-    marginBottom: 5,
+    color: "#fff",
+    fontWeight: "500",
+    marginBottom: 2,
   },
-  specialOfferSubText: {
-    color: '#D1D5DB',
-    fontSize: 14,
+  valueText: {
+    fontSize: 17,
+    color: "#B9D4E8",
+    fontWeight: "400",
+  },
+  settingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "center",
+    backgroundColor: "#1C2830",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 30,
+    marginBottom: 12,
+  },
+  logoutText: {
+    color: "#F87171",
+    fontSize: 18,
+    fontWeight: "bold",
   },
 });

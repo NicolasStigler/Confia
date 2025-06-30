@@ -33,6 +33,7 @@ function RootLayoutNav() {
           <Stack.Screen name="register" />
           <Stack.Screen name="(client)" options={{ headerShown: false }} />
           <Stack.Screen name="(provider)" options={{ headerShown: false }} />
+          <Stack.Screen name="service-details" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
         </Stack>
         <StatusBar style="auto" />
