@@ -1,99 +1,115 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
+import { format } from 'date-fns';
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { fetchGetServicios } from '../../api/api'; // Adjust path as needed
+import { fetchGetClientAppointmentsByStatus } from '../../api/api';
 
-interface Service {
+interface Appointment {
   id: string;
-  name: string;
-  image?: any; // You can adjust this type if you know your backend returns image URLs
+  date: string;
+  horaDeInicio: string;
+  horaDeFin: string;
+  status: string;
+  cliente_direccion: string;
+  district: { name: string };
+  client: {
+    firstname: string;
+    lastname: string;
+    profileImage?: string;
+  };
+  servicio: {
+    name: string;
+    price: string;
+    image?: string;
+  };
 }
 
-export default function HomeScreen() {
-  const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+const getCurrentDate = () => format(new Date(), 'yyyy-MM-dd');
+
+export default function ReservationsScreen() {
+  const [requestedAppointments, setRequestedAppointments] = useState<Appointment[]>([]);
+  const [acceptedAppointments, setAcceptedAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const currentDate = getCurrentDate();
 
   useEffect(() => {
-    const fetchServices = async () => {
+    const fetchAppointments = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        setLoading(true);
-        setError(null);
-        const data = await fetchGetServicios();
-        // If your backend returns an array of services with id, name, and maybe an image field,
-        // you may need to map or adapt it here.
-        setServices(data || []);
-      } catch (e: any) {
-        setError('Error fetching services');
+        const requested = await fetchGetClientAppointmentsByStatus('REQUESTED', currentDate);
+        const accepted = await fetchGetClientAppointmentsByStatus('ACCEPTED', currentDate);
+        setRequestedAppointments(requested || []);
+        setAcceptedAppointments(accepted || []);
+      } catch (e) {
+        setError('Error fetching reservations');
       } finally {
         setLoading(false);
       }
     };
-    fetchServices();
-  }, []);
+    fetchAppointments();
+  }, [currentDate]);
+
+  const renderAppointmentCard = (item: Appointment) => (
+    <View key={item.id} style={styles.serviceCard}>
+      <Image
+        source={item.servicio.image ? { uri: item.servicio.image } : require('@/assets/images/avatar.png')}
+        style={styles.serviceImage}
+      />
+      <ThemedText style={styles.serviceTitle}>{item.servicio.name}</ThemedText>
+      <ThemedText style={styles.serviceSubText}>{`Cliente: ${item.client.firstname} ${item.client.lastname}`}</ThemedText>
+      <ThemedText style={styles.serviceSubText}>{`Fecha: ${item.date}`}</ThemedText>
+      <ThemedText style={styles.serviceSubText}>{`Hora: ${item.horaDeInicio} - ${item.horaDeFin}`}</ThemedText>
+      <ThemedText style={styles.serviceSubText}>{`Dirección: ${item.cliente_direccion}`}</ThemedText>
+      <ThemedText style={styles.serviceSubText}>{`Distrito: ${item.district.name}`}</ThemedText>
+      <ThemedText style={styles.serviceSubText}>{`Estado: ${item.status}`}</ThemedText>
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <ThemedView style={styles.container}>
         <View style={styles.header}>
-          <ThemedText type="title" style={styles.headerTitle}>Confia</ThemedText>
-          <TouchableOpacity>
-            <Ionicons name="notifications-outline" size={24} color={Platform.OS === 'ios' ? '#000' : '#fff'} />
+          <ThemedText type="title" style={styles.headerTitle}>Mis Reservas</ThemedText>
+          <TouchableOpacity onPress={() => router.push('/')}> {/* Home or previous page */}
+            <Ionicons name="arrow-back" size={24} color={Platform.OS === 'ios' ? '#000' : '#fff'} />
           </TouchableOpacity>
         </View>
-
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
-          <TextInput
-            placeholder="Search for services"
-            placeholderTextColor="#888"
-            style={styles.searchInput}
-          />
-        </View>
-
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <ThemedView style={styles.sectionContainer}>
-            <ThemedText type="subtitle" style={styles.sectionTitle}>Featured Services</ThemedText>
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : error ? (
-              <ThemedText style={{ color: 'red', marginBottom: 16 }}>{error}</ThemedText>
-            ) : (
+        {loading ? (
+          <ActivityIndicator color="#fff" style={{ marginTop: 40 }} />
+        ) : error ? (
+          <ThemedText style={{ color: 'red', margin: 20 }}>{error}</ThemedText>
+        ) : (
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <ThemedView style={styles.sectionContainer}>
+              <ThemedText type="subtitle" style={styles.sectionTitle}>Solicitudes Pendientes</ThemedText>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
-                {services.map((service, idx) => (
-                  <TouchableOpacity key={service.id ?? service.name ?? idx} style={styles.serviceCard}>
-                    {/* If you have images from backend use <Image source={{ uri: service.image }} ... */}
-                    <Image
-                      source={
-                        service.image
-                          ? { uri: service.image }
-                          : { uri: `https://source.unsplash.com/400x300/?${encodeURIComponent(service.name)}` }
-                      }
-                      style={styles.serviceImage}
-                    />
-                    <ThemedText style={styles.serviceTitle}>{service.name}</ThemedText>
-                  </TouchableOpacity>
-                ))}
+                {requestedAppointments.length === 0 ? (
+                  <ThemedText style={styles.emptyText}>No tienes solicitudes pendientes.</ThemedText>
+                ) : (
+                  requestedAppointments.map(renderAppointmentCard)
+                )}
               </ScrollView>
-            )}
-          </ThemedView>
-
-          <ThemedView style={styles.sectionContainer}>
-            <ThemedText type="subtitle" style={styles.sectionTitle}>Special Offers</ThemedText>
-            <TouchableOpacity style={styles.specialOfferCard}>
-              <Image source={require('@/assets/images/special-offer.png')} style={styles.specialOfferImage} />
-              <View style={styles.specialOfferTextContainer}>
-                <ThemedText type="defaultSemiBold" style={styles.specialOfferMainText}>Get 20% off your first booking</ThemedText>
-                <ThemedText style={styles.specialOfferSubText}>Use code WELCOME20 at checkout</ThemedText>
-                <ThemedText style={styles.specialOfferSubText}>Limited time offer</ThemedText>
-              </View>
-            </TouchableOpacity>
-          </ThemedView>
-        </ScrollView>
+            </ThemedView>
+            <ThemedView style={styles.sectionContainer}>
+              <ThemedText type="subtitle" style={styles.sectionTitle}>Solicitudes Aceptadas</ThemedText>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
+                {acceptedAppointments.length === 0 ? (
+                  <ThemedText style={styles.emptyText}>No tienes solicitudes aceptadas.</ThemedText>
+                ) : (
+                  acceptedAppointments.map(renderAppointmentCard)
+                )}
+              </ScrollView>
+            </ThemedView>
+          </ScrollView>
+        )}
       </ThemedView>
     </SafeAreaView>
   );
@@ -113,29 +129,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 10 : 10, // SafeAreaView handles the top inset
+    paddingTop: Platform.OS === 'ios' ? 10 : 10,
     paddingBottom: 10,
   },
   headerTitle: {
     color: '#FFFFFF',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1F2937',
-    borderRadius: 25,
-    marginHorizontal: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    marginBottom: 20,
-  },
-  searchIcon: {
-    marginRight: 10,
-  },
-  searchInput: {
-    flex: 1,
-    color: '#FFFFFF',
-    fontSize: 16,
   },
   sectionContainer: {
     paddingHorizontal: 20,
@@ -150,43 +148,38 @@ const styles = StyleSheet.create({
   },
   horizontalScroll: {
     paddingRight: 20,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
   },
   serviceCard: {
     backgroundColor: '#1F2937',
     borderRadius: 15,
-    width: 150,
+    width: 200,
     marginRight: 15,
     overflow: 'hidden',
+    padding: 12,
+    alignItems: 'flex-start',
   },
   serviceImage: {
     width: '100%',
     height: 100,
+    borderRadius: 10,
+    marginBottom: 8,
   },
   serviceTitle: {
-    padding: 10,
     color: '#FFFFFF',
     fontSize: 16,
-    textAlign: 'center',
+    fontWeight: 'bold',
+    marginBottom: 4,
   },
-  specialOfferCard: {
-    backgroundColor: '#1F2937',
-    borderRadius: 15,
-    overflow: 'hidden',
-  },
-  specialOfferImage: {
-    width: '100%',
-    height: 180,
-  },
-  specialOfferTextContainer: {
-    padding: 15,
-  },
-  specialOfferMainText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    marginBottom: 5,
-  },
-  specialOfferSubText: {
+  serviceSubText: {
     color: '#D1D5DB',
     fontSize: 14,
+    marginBottom: 2,
+  },
+  emptyText: {
+    color: '#888',
+    fontSize: 16,
+    padding: 20,
   },
 });

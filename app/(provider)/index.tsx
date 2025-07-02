@@ -1,84 +1,158 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { Ionicons } from '@expo/vector-icons'; // Assuming you're using Expo and have Ionicons
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { fetchGetServicios } from '../../api/api'; // Adjust path if needed
 
-// Sample data - replace with your actual data source
-const featuredServicesData = [
-  { id: '1', title: 'Home Repair', image: require('@/assets/images/home-repair.png') }, // Replace with your actual image
-  { id: '2', title: 'Pet Care', image: require('@/assets/images/pet-care.png') }, // Replace with your actual image
-  { id: '3', title: 'Personal Care', image: require('@/assets/images/personal-care.png') }, // Replace with your actual image
-];
+interface Service {
+  id: string;
+  name: string;
+  image?: string;
+}
 
 export default function HomeScreen() {
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await fetchGetServicios();
+        if (Array.isArray(data) && typeof data[0] === 'string') {
+          setServices(data.map((name, idx) => ({
+            id: String(idx),
+            name,
+          })));
+        } else {
+          setServices(data || []);
+        }
+      } catch (e: any) {
+        setError('Error fetching services');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchServices();
+  }, []);
+
+  const handleServicePress = (serviceName: string) => {
+    router.push({ pathname: '/service-details', params: { serviceName } });
+  };
+
+  const handleAddService = () => {
+    router.push('/provider/add-service'); // Adjust route as needed
+  };
+
   return (
-    <ThemedView style={styles.container}>
-      <View style={styles.header}>
-        <ThemedText type="title" style={styles.headerTitle}>Confia</ThemedText>
-        <TouchableOpacity>
-          <Ionicons name="notifications-outline" size={24} color={Platform.OS === 'ios' ? '#000' : '#fff'} />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
-        <TextInput
-          placeholder="Search for services"
-          placeholderTextColor="#888"
-          style={styles.searchInput}
-        />
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <ThemedView style={styles.sectionContainer}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>Featured Services</ThemedText>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
-            {featuredServicesData.map((service) => (
-              <TouchableOpacity key={service.id} style={styles.serviceCard}>
-                <Image source={service.image} style={styles.serviceImage} />
-                <ThemedText style={styles.serviceTitle}>{service.title}</ThemedText>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </ThemedView>
-
-        <ThemedView style={styles.sectionContainer}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>Special Offers</ThemedText>
-          <TouchableOpacity style={styles.specialOfferCard}>
-            <Image source={require('@/assets/images/special-offer.png')} style={styles.specialOfferImage} />
-            <View style={styles.specialOfferTextContainer}>
-              <ThemedText type="defaultSemiBold" style={styles.specialOfferMainText}>Get 20% off your first booking</ThemedText>
-              <ThemedText style={styles.specialOfferSubText}>Use code WELCOME20 at checkout</ThemedText>
-              <ThemedText style={styles.specialOfferSubText}>Limited time offer</ThemedText>
-            </View>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <ThemedView style={styles.container}>
+        <View style={styles.header}>
+          <ThemedText type="title" style={styles.headerTitle}>
+            Confia
+          </ThemedText>
+          <TouchableOpacity>
+            <Ionicons name="notifications-outline" size={24} color={Platform.OS === 'ios' ? '#000' : '#fff'} />
           </TouchableOpacity>
-        </ThemedView>
-      </ScrollView>
-    </ThemedView>
+        </View>
+
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
+          <TextInput
+            placeholder="Search for services"
+            placeholderTextColor="#888"
+            style={styles.searchInput}
+          />
+        </View>
+
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
+          <ThemedView style={styles.sectionContainer}>
+            <ThemedText type="subtitle" style={styles.sectionTitle}>
+              Your Services
+            </ThemedText>
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : error ? (
+              <ThemedText style={{ color: 'red', marginBottom: 16 }}>
+                {error}
+              </ThemedText>
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScroll}
+              >
+                {services.map((service, idx) => (
+                  <TouchableOpacity
+                    key={service.id ?? service.name ?? idx}
+                    style={styles.serviceCard}
+                    onPress={() => handleServicePress(service.name)}
+                  >
+                    <Image
+                      source={{ uri: service.image }}
+                      style={styles.serviceImage}
+                    />
+                    <ThemedText style={styles.serviceTitle}>
+                      {service.name}
+                    </ThemedText>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </ThemedView>
+
+          <View style={styles.addServiceContainer}>
+            <TouchableOpacity style={styles.addServiceButton} onPress={handleAddService}>
+              <Ionicons name="add-circle-outline" size={28} color="#fff" style={{ marginRight: 10 }} />
+              <ThemedText type="defaultSemiBold" style={styles.addServiceText}>
+                Add New Service
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </ThemedView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#0D1117',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#0D1117', // Dark background color from image
+    backgroundColor: '#0D1117',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 50 : 20, // Adjust for status bar
+    paddingTop: Platform.OS === 'ios' ? 10 : 10,
     paddingBottom: 10,
   },
   headerTitle: {
-    color: '#FFFFFF', // White text
+    color: '#FFFFFF',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1F2937', // Darker search bar background
+    backgroundColor: '#1F2937',
     borderRadius: 25,
     marginHorizontal: 20,
     paddingHorizontal: 15,
@@ -90,60 +164,64 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: '#FFFFFF', // White text
+    color: '#FFFFFF',
     fontSize: 16,
   },
   sectionContainer: {
     paddingHorizontal: 20,
     marginBottom: 20,
-    backgroundColor: 'transparent', // Ensure sections don't have their own background unless intended
+    backgroundColor: 'transparent',
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 15,
-    color: '#FFFFFF', // White text
+    color: '#FFFFFF',
   },
   horizontalScroll: {
-    paddingRight: 20, // Ensure last card is not cut off
+    paddingRight: 20,
   },
   serviceCard: {
-    backgroundColor: '#1F2937', // Card background
+    backgroundColor: '#1F2937',
     borderRadius: 15,
     width: 150,
     marginRight: 15,
-    overflow: 'hidden', // Ensure image corners are rounded
+    overflow: 'hidden',
   },
   serviceImage: {
     width: '100%',
     height: 100,
-    // Ensure you have images with appropriate aspect ratio or adjust height
   },
   serviceTitle: {
     padding: 10,
-    color: '#FFFFFF', // White text
+    color: '#FFFFFF',
     fontSize: 16,
     textAlign: 'center',
   },
-  specialOfferCard: {
-    backgroundColor: '#1F2937', // Card background
+  addServiceContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 200, // Ensures enough space for vertical centering
+  },
+  addServiceButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#243b47',
     borderRadius: 15,
-    overflow: 'hidden',
+    paddingVertical: 18,
+    paddingHorizontal: 30,
+    marginTop: 10,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  specialOfferImage: {
-    width: '100%',
-    height: 180, // Adjust as needed
-  },
-  specialOfferTextContainer: {
-    padding: 15,
-  },
-  specialOfferMainText: {
-    color: '#FFFFFF', // White text
+  addServiceText: {
+    color: '#fff',
     fontSize: 18,
-    marginBottom: 5,
-  },
-  specialOfferSubText: {
-    color: '#D1D5DB', // Lighter gray text
-    fontSize: 14,
   },
 });

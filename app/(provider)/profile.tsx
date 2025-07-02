@@ -9,28 +9,38 @@ import {
   StyleSheet,
   Switch,
   Text,
+  TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { fetchGetClientMe } from "../../api/api"; // Adjust path as needed
-import NoPhotoImage from "../../assets/images/avatar.png"; // Fallback image
+import { fetchGetWorkerMe, fetchUpdateWorkerImage, fetchUpdateWorkerProfile } from "../../api/api";
+import NoPhotoImage from "../../assets/images/avatar.png";
 
 export default function Profile() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [client, setClient] = useState<any>(null);
+  const [worker, setWorker] = useState<any>(null);
+  const [editing, setEditing] = useState(false);
+  const [firstname, setFirstname] = useState("");
+  const [lastname, setLastname] = useState("");
+  const [age, setAge] = useState("");
+  const [image, setImage] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const loadClientData = async () => {
+    const loadWorkerData = async () => {
       try {
-        const data = await fetchGetClientMe();
-        setClient(data);
+        const data = await fetchGetWorkerMe();
+        setWorker(data);
+        setFirstname(data.firstname);
+        setLastname(data.lastname);
+        setAge(data.age ? data.age.toString() : "");
+        setImage(data.profileImage);
       } catch (error) {
         Alert.alert("Error", "No se pudo cargar la información del perfil.");
       }
     };
-    loadClientData();
+    loadWorkerData();
   }, []);
 
   const handleLogout = async () => {
@@ -38,7 +48,34 @@ export default function Profile() {
     router.replace("/login");
   };
 
-  if (!client) {
+  const handleSaveProfile = async () => {
+    const workerProfileToUpdate = {
+      firstname,
+      lastname,
+      age: parseInt(age, 10),
+    };
+    try {
+      const updatedWorker = await fetchUpdateWorkerProfile(workerProfileToUpdate);
+      setWorker(updatedWorker);
+      Alert.alert("Perfil guardado");
+      setEditing(false);
+    } catch (error) {
+      Alert.alert("Error", "El perfil no se pudo guardar");
+    }
+  };
+
+  const handleSaveImage = async () => {
+    if (image) {
+      try {
+        await fetchUpdateWorkerImage(image);
+        Alert.alert("Foto de perfil actualizada");
+      } catch (error) {
+        Alert.alert("Error", "No se pudo actualizar la foto de perfil");
+      }
+    }
+  };
+
+  if (!worker) {
     return (
       <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
         <View style={styles.loadingContainer}>
@@ -61,25 +98,61 @@ export default function Profile() {
 
         <View style={styles.avatarSection}>
           <View style={styles.avatarCircle}>
-            <Image
-              source={client.profileImage ? { uri: client.profileImage } : NoPhotoImage}
-              style={styles.avatar}
-              resizeMode="cover"
-            />
+            <TouchableOpacity onPress={handleSaveImage}>
+              <Image
+                source={image ? { uri: image } : NoPhotoImage}
+                style={styles.avatar}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
           </View>
-          <Text style={styles.profileName}>{client.firstname} {client.lastname}</Text>
-          <Text style={styles.memberSince}>
-            Miembro desde {client.createdAt ? new Date(client.createdAt).getFullYear() : "2025"}
-          </Text>
+          {editing ? (
+            <>
+              <TextInput
+                style={styles.input}
+                value={firstname}
+                onChangeText={setFirstname}
+                placeholder="First Name"
+                placeholderTextColor="#B9D4E8"
+              />
+              <TextInput
+                style={styles.input}
+                value={lastname}
+                onChangeText={setLastname}
+                placeholder="Last Name"
+                placeholderTextColor="#B9D4E8"
+              />
+              <TextInput
+                style={styles.input}
+                value={age}
+                onChangeText={setAge}
+                placeholder="Age"
+                placeholderTextColor="#B9D4E8"
+                keyboardType="numeric"
+              />
+              <TouchableOpacity style={styles.saveButton} onPress={handleSaveProfile}>
+                <Text style={styles.saveButtonText}>Guardar Perfil</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <Text style={styles.profileName}>{worker.firstname} {worker.lastname}</Text>
+              <Text style={styles.memberSince}>
+                Miembro desde {worker.createdAt ? new Date(worker.createdAt).getFullYear() : "2025"}
+              </Text>
+            </>
+          )}
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Personal Information</Text>
-          <ProfileRow label="Email" value={client.email || "-"} />
-          <ProfileRow label="Phone Number" value={client.phone || "-"} />
-          <ProfileRow label="Address" value={client.direccion || "-"} />
-          <ProfileRow label="Distrito" value={client.distrito_vive?.name || "-"} />
-          <ProfileRow label="Edad" value={client.age ? client.age.toString() : "-"} />
+          <ProfileRow label="Email" value={worker.email || "-"} />
+          <ProfileRow label="Phone Number" value={worker.phone || "-"} />
+          <ProfileRow label="Address" value={worker.direccion || "-"} />
+          <ProfileRow label="Distrito" value={worker.distrito_vive?.name || "-"} />
+          <ProfileRow label="Edad" value={worker.age ? worker.age.toString() : "-"} />
+          <ProfileRow label="Rol" value={worker.role || "-"} />
+          <ProfileRow label="Calificación Promedio" value={worker.averageRating ? worker.averageRating.toString() : "-"} />
         </View>
 
         <View style={styles.section}>
@@ -103,6 +176,11 @@ export default function Profile() {
           <Ionicons name="log-out-outline" size={22} color="#F87171" style={{ marginRight: 10 }} />
           <Text style={styles.logoutText}>Log out</Text>
         </TouchableOpacity>
+        {editing ? null : (
+          <TouchableOpacity style={styles.editButton} onPress={() => setEditing(true)}>
+            <Text style={styles.editButtonText}>Editar Perfil</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -240,5 +318,43 @@ const styles = StyleSheet.create({
     color: "#F87171",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  editButton: {
+    alignSelf: 'center',
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 30,
+    marginBottom: 24,
+  },
+  editButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  input: {
+    width: '80%',
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#B9D4E8',
+    borderRadius: 5,
+    marginBottom: 10,
+    color: '#fff',
+    backgroundColor: '#1C2830',
+    alignSelf: 'center',
+    fontSize: 18,
+  },
+  saveButton: {
+    alignSelf: 'center',
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 30,
+    marginBottom: 24,
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
