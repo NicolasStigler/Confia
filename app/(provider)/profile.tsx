@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
@@ -75,6 +76,29 @@ export default function Profile() {
     }
   };
 
+  const handlePickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setImage(result.assets[0].uri);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setImage(result.assets[0].uri);
+    }
+  };
+
   if (!worker) {
     return (
       <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
@@ -95,10 +119,9 @@ export default function Profile() {
           <Text style={styles.headerTitle}>Account</Text>
           <View style={{ width: 32 }} />
         </View>
-
         <View style={styles.avatarSection}>
           <View style={styles.avatarCircle}>
-            <TouchableOpacity onPress={handleSaveImage}>
+            <TouchableOpacity onPress={handlePickImage} onLongPress={handleTakePhoto}>
               <Image
                 source={image ? { uri: image } : NoPhotoImage}
                 style={styles.avatar}
@@ -106,6 +129,15 @@ export default function Profile() {
               />
             </TouchableOpacity>
           </View>
+          <TouchableOpacity onPress={handlePickImage} style={{ marginBottom: 8 }}>
+            <Text style={{ color: '#2563EB', fontWeight: 'bold' }}>Cambiar foto</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleTakePhoto} style={{ marginBottom: 8 }}>
+            <Text style={{ color: '#2563EB', fontWeight: 'bold' }}>Tomar foto</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleSaveImage} style={{ marginBottom: 8 }}>
+            <Text style={{ color: '#2563EB', fontWeight: 'bold' }}>Guardar foto</Text>
+          </TouchableOpacity>
           {editing ? (
             <>
               <TextInput
@@ -132,6 +164,9 @@ export default function Profile() {
               />
               <TouchableOpacity style={styles.saveButton} onPress={handleSaveProfile}>
                 <Text style={styles.saveButtonText}>Guardar Perfil</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveButton} onPress={() => setEditing(false)}>
+                <Text style={styles.saveButtonText}>Cancelar</Text>
               </TouchableOpacity>
             </>
           ) : (
@@ -178,7 +213,8 @@ export default function Profile() {
         </TouchableOpacity>
         {editing ? null : (
           <TouchableOpacity style={styles.editButton} onPress={() => setEditing(true)}>
-            <Text style={styles.editButtonText}>Editar Perfil</Text>
+            <Ionicons name="create-outline" size={22} color="#2563EB" style={{ marginRight: 10 }} />
+            <Text style={[styles.editButtonText, { color: '#2563EB' }]}>Editar Perfil</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -326,6 +362,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 30,
     marginBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   editButtonText: {
     color: '#fff',

@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
@@ -9,16 +10,28 @@ import {
   StyleSheet,
   Switch,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { fetchGetClientMe } from "../../api/api"; // Adjust path as needed
+import {
+  fetchGetClientMe,
+  fetchUpdateClientImage,
+  fetchUpdateClientProfile,
+} from "../../api/api"; // Adjust path as needed
 import NoPhotoImage from "../../assets/images/avatar.png"; // Fallback image
 
 export default function Profile() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [client, setClient] = useState<any>(null);
+  const [editing, setEditing] = useState(false);
+  const [firstname, setFirstname] = useState("");
+  const [lastname, setLastname] = useState("");
+  const [age, setAge] = useState("");
+  const [direccion, setDireccion] = useState("");
+  const [distritoVive, setDistritoVive] = useState("");
+  const [image, setImage] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -26,6 +39,12 @@ export default function Profile() {
       try {
         const data = await fetchGetClientMe();
         setClient(data);
+        setFirstname(data.firstname || "");
+        setLastname(data.lastname || "");
+        setAge(data.age ? String(data.age) : "");
+        setDireccion(data.direccion || "");
+        setDistritoVive(data.distrito_vive?.name || "");
+        setImage(data.profileImage || null);
       } catch (error) {
         Alert.alert("Error", "No se pudo cargar la información del perfil.");
       }
@@ -36,6 +55,73 @@ export default function Profile() {
   const handleLogout = async () => {
     await SecureStore.deleteItemAsync("token");
     router.replace("/login");
+  };
+
+  const handleEditProfile = () => setEditing(true);
+  const handleCancelEdit = () => {
+    setEditing(false);
+    if (client) {
+      setFirstname(client.firstname || "");
+      setLastname(client.lastname || "");
+      setAge(client.age ? String(client.age) : "");
+      setDireccion(client.direccion || "");
+      setDistritoVive(client.distrito_vive?.name || "");
+      setImage(client.profileImage || null);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      await fetchUpdateClientProfile({
+        firstname,
+        lastname,
+        age: parseInt(age, 10),
+        direccion,
+        distrito_vive: distritoVive,
+      });
+      setEditing(false);
+      const updated = await fetchGetClientMe();
+      setClient(updated);
+      Alert.alert("Perfil actualizado");
+    } catch (e) {
+      Alert.alert("Error", "No se pudo actualizar el perfil");
+    }
+  };
+
+  const handlePickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setImage(result.assets[0].uri);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setImage(result.assets[0].uri);
+    }
+  };
+
+  const handleSaveImage = async () => {
+    if (image && image !== client?.profileImage) {
+      try {
+        await fetchUpdateClientImage(image);
+        const updated = await fetchGetClientMe();
+        setClient(updated);
+        Alert.alert("Foto de perfil actualizada");
+      } catch (e) {
+        Alert.alert("Error", "No se pudo actualizar la foto de perfil");
+      }
+    }
   };
 
   if (!client) {
@@ -50,38 +136,122 @@ export default function Profile() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.headerContainer}>
-          <TouchableOpacity style={styles.headerBack} onPress={() => router.back()}>
+          <TouchableOpacity
+            style={styles.headerBack}
+            onPress={() => router.back()}
+          >
             <Ionicons name="arrow-back" size={28} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Account</Text>
           <View style={{ width: 32 }} />
         </View>
-
         <View style={styles.avatarSection}>
           <View style={styles.avatarCircle}>
-            <Image
-              source={client.profileImage ? { uri: client.profileImage } : NoPhotoImage}
-              style={styles.avatar}
-              resizeMode="cover"
-            />
+            <TouchableOpacity
+              onPress={handlePickImage}
+              onLongPress={handleTakePhoto}
+            >
+              <Image
+                source={image ? { uri: image } : NoPhotoImage}
+                style={styles.avatar}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
           </View>
-          <Text style={styles.profileName}>{client.firstname} {client.lastname}</Text>
+          <TouchableOpacity onPress={handlePickImage} style={{ marginBottom: 8 }}>
+            <Text style={{ color: "#2563EB", fontWeight: "bold" }}>
+              Cambiar foto
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleTakePhoto} style={{ marginBottom: 8 }}>
+            <Text style={{ color: "#2563EB", fontWeight: "bold" }}>
+              Tomar foto
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleSaveImage} style={{ marginBottom: 8 }}>
+            <Text style={{ color: "#2563EB", fontWeight: "bold" }}>
+              Guardar foto
+            </Text>
+          </TouchableOpacity>
+          <Text style={styles.profileName}>
+            {editing ? (
+              <TextInput
+                style={[
+                  styles.profileName,
+                  {
+                    backgroundColor: "#222",
+                    color: "#fff",
+                    borderRadius: 8,
+                    paddingHorizontal: 8,
+                  },
+                ]}
+                value={firstname}
+                onChangeText={setFirstname}
+                placeholder="Nombre"
+                placeholderTextColor="#B9D4E8"
+              />
+            ) : (
+              `${client.firstname} ${client.lastname}`
+            )}
+          </Text>
           <Text style={styles.memberSince}>
-            Miembro desde {client.createdAt ? new Date(client.createdAt).getFullYear() : "2025"}
+            Miembro desde{" "}
+            {client.createdAt
+              ? new Date(client.createdAt).getFullYear()
+              : "2025"}
           </Text>
         </View>
-
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Personal Information</Text>
-          <ProfileRow label="Email" value={client.email || "-"} />
-          <ProfileRow label="Phone Number" value={client.phone || "-"} />
-          <ProfileRow label="Address" value={client.direccion || "-"} />
-          <ProfileRow label="Distrito" value={client.distrito_vive?.name || "-"} />
-          <ProfileRow label="Edad" value={client.age ? client.age.toString() : "-"} />
+          {editing ? (
+            <>
+              <ProfileRow
+                label="Nombre"
+                value={firstname}
+                editable
+                onChangeText={setFirstname}
+              />
+              <ProfileRow
+                label="Apellido"
+                value={lastname}
+                editable
+                onChangeText={setLastname}
+              />
+              <ProfileRow
+                label="Edad"
+                value={age}
+                editable
+                onChangeText={setAge}
+                keyboardType="numeric"
+              />
+              <ProfileRow
+                label="Dirección"
+                value={direccion}
+                editable
+                onChangeText={setDireccion}
+              />
+              <ProfileRow
+                label="Distrito"
+                value={distritoVive}
+                editable
+                onChangeText={setDistritoVive}
+              />
+            </>
+          ) : (
+            <>
+              <ProfileRow label="Email" value={client.email || "-"} />
+              <ProfileRow label="Phone Number" value={client.phone || "-"} />
+              <ProfileRow label="Address" value={client.direccion || "-"} />
+              <ProfileRow label="Distrito" value={client.distrito_vive?.name || "-"} />
+              <ProfileRow label="Edad" value={client.age ? client.age.toString() : "-"} />
+            </>
+          )}
         </View>
-
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>App Settings</Text>
           <View style={styles.settingRow}>
@@ -98,9 +268,50 @@ export default function Profile() {
             <Text style={styles.valueText}>Spanish</Text>
           </View>
         </View>
-
+        {editing ? (
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "center",
+              gap: 16,
+            }}
+          >
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={handleSaveProfile}
+            >
+              <Text style={styles.logoutText}>Guardar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={handleCancelEdit}
+            >
+              <Text style={styles.logoutText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleEditProfile}
+          >
+            <Ionicons
+              name="create-outline"
+              size={22}
+              color="#2563EB"
+              style={{ marginRight: 10 }}
+            />
+            <Text style={[styles.logoutText, { color: "#2563EB" }]}>
+              Editar Perfil
+            </Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={22} color="#F87171" style={{ marginRight: 10 }} />
+          <Ionicons
+            name="log-out-outline"
+            size={22}
+            color="#F87171"
+            style={{ marginRight: 10 }}
+          />
           <Text style={styles.logoutText}>Log out</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -111,15 +322,39 @@ export default function Profile() {
 function ProfileRow({
   label,
   value,
+  editable,
+  onChangeText,
+  keyboardType,
 }: {
   label: string;
   value: string;
+  editable?: boolean;
+  onChangeText?: (v: string) => void;
+  keyboardType?: string;
 }) {
   return (
     <View style={styles.row}>
       <View>
         <Text style={styles.labelText}>{label}</Text>
-        <Text style={styles.valueText}>{value}</Text>
+        {editable ? (
+          <TextInput
+            style={{
+              color: "#fff",
+              backgroundColor: "#222",
+              borderRadius: 8,
+              paddingHorizontal: 8,
+              marginTop: 2,
+              minWidth: 120,
+            }}
+            value={value}
+            onChangeText={onChangeText}
+            keyboardType={keyboardType}
+            placeholder={label}
+            placeholderTextColor="#B9D4E8"
+          />
+        ) : (
+          <Text style={styles.valueText}>{value}</Text>
+        )}
       </View>
     </View>
   );

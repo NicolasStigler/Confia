@@ -55,7 +55,7 @@ export default function HomeScreen() {
   };
 
   const handleAddService = () => {
-    router.push('/provider/add-service'); // Adjust route as needed
+    router.push('add-service'); // Adjust route as needed
   };
 
   return (

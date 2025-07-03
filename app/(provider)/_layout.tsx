@@ -41,6 +41,19 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="set-horario"
+        options={{
+          title: 'Horario',
+          tabBarIcon: ({ color }) => (
+            <IconSymbol
+              size={28}
+              name={Platform.OS === 'ios' ? 'clock.fill' : 'clock.fill'}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Account',
