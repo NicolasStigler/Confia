@@ -47,7 +47,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol
               size={28}
-              name={Platform.OS === 'ios' ? 'clock.fill' : 'clock.fill'}
+              name={Platform.OS === 'ios' ? 'access-time' : 'access-time'}
               color={color}
             />
           ),

@@ -2,7 +2,7 @@ import axios, { AxiosResponse } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { jwtDecode } from 'jwt-decode';
 
-const BACKEND_URL = 'http://192.168.1.77:8080';
+const BACKEND_URL = 'http://192.168.62.214:8080';
 
 // Types for Auth
 export interface LoginRequest {

@@ -1,7 +1,8 @@
+import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { fetchSetWorkerSchedule } from '../../api/api';
 import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
@@ -43,11 +44,6 @@ const SetHorarioScreen = () => {
       setError('La hora de inicio debe ser antes de la hora de fin');
       return;
     }
-    const oneHour = 60 * 60 * 1000;
-    if (horaDeFin - horaDeInicio !== oneHour) {
-      setError('La duración del horario debe ser exactamente de una hora');
-      return;
-    }
     const scheduleData = {
       fecha: fecha.toISOString().split('T')[0],
       horaDeInicio: horaDeInicio.toTimeString().split(' ')[0],
@@ -68,9 +64,12 @@ const SetHorarioScreen = () => {
 
   return (
     <ThemedView style={[styles.container, { backgroundColor: bg }]}>  
-      <Pressable style={[styles.backButton, { backgroundColor: primary }]} onPress={() => router.back()}>
-        <ThemedText style={styles.backButtonText}>Atrás</ThemedText>
-      </Pressable>
+      <View style={styles.headerContainer}>
+        <TouchableOpacity style={styles.headerBack} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={28} color="white" />
+        </TouchableOpacity>
+        <View style={{ width: '90%' }} />
+      </View>
       <ThemedText type="title" style={{ marginBottom: 24, color: text }}>Configura tu horario</ThemedText>
       <View style={styles.inputGroup}>
         <ThemedText style={styles.label}>Fecha</ThemedText>
@@ -119,7 +118,7 @@ const SetHorarioScreen = () => {
       </View>
       {error ? <ThemedText style={styles.error}>{error}</ThemedText> : null}
       {success ? <ThemedText style={styles.success}>{success}</ThemedText> : null}
-      <Pressable style={[styles.submitButton, { backgroundColor: primary }]} onPress={handleSubmit}>
+      <Pressable style={[styles.submitButton, { backgroundColor: '#243b47' }]} onPress={handleSubmit}>
         <ThemedText style={styles.submitButtonText}>Crear horario</ThemedText>
       </Pressable>
     </ThemedView>
@@ -133,17 +132,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backButton: {
-    position: 'absolute',
-    top: 48,
-    left: 24,
-    padding: 10,
-    borderRadius: 8,
-    zIndex: 10,
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+    minHeight: 52,
   },
-  backButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
+  headerBack: {
+    paddingRight: 12,
+    width: 32,
   },
   inputGroup: {
     width: '100%',
@@ -155,7 +152,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   input: {
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#1F2937',
     borderRadius: 8,
     padding: 16,
     marginBottom: 4,

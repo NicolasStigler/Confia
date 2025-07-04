@@ -17,6 +17,7 @@ const MAPPING = {
   'house.fill': 'home-filled',
   'profile.fill': 'account-circle',
   'reservation.fill': 'calendar-today',
+  'access-time': 'access-time',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
 } as IconMapping;
