@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   Alert,
   Dimensions,
@@ -25,8 +25,7 @@ import {
 import { fetchLogin } from '../api/api';
 import { ArrowLeftIcon } from '../components/Icons';
 
-const IMAGE_URL =
-  'https://img.freepik.com/free-vector/home-renomation-flat-composition-with-plumber-fixing-pipes-vector-illustration_1284-80776.jpg';
+const IMAGE_URL = 'https://img.freepik.com/free-vector/home-renomation-flat-composition-with-plumber-fixing-pipes-vector-illustration_1284-80776.jpg';
 
 interface CustomThemeColors {
   secondaryText: string;
@@ -162,6 +161,10 @@ export default function LoginScreen() {
   const appbarHeight = 56;
   const keyboardOffset = Platform.OS === 'ios' ? appbarHeight : 0;
 
+  const ArrowIcon = useCallback(() => (
+    <ArrowLeftIcon color={onBackground} size={24} />
+  ), [onBackground]);
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <Appbar.Header
@@ -171,9 +174,7 @@ export default function LoginScreen() {
         statusBarHeight={0}
       >
         <Appbar.Action
-          icon={() => (
-            <ArrowLeftIcon color={onBackground} size={24} />
-          )}
+          icon={ArrowIcon}
           onPress={() => router.back()}
           rippleColor="transparent"
         />

@@ -16,6 +16,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchGetServicios } from '../../api/api'; // Use the correct path for your project
 
+const IMAGE_URL = 'https://imgs.search.brave.com/rZmotpfnafDxcsS7hT79tJSBP7mODE-sIx4-pPMjnAo/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jZG5p/Lmljb25zY291dC5j/b20vaWxsdXN0cmF0/aW9uL3ByZW1pdW0v/dGh1bWIvaG9tZS1h/cHBsaWFuY2UtcmVw/YWlybWFuLWlsbHVz/dHJhdGlvbi1kb3du/bG9hZC1pbi1zdmct/cG5nLWdpZi1maWxl/LWZvcm1hdHMtLXRl/Y2huaWNpYW4tcmVw/YWlyaW5nLWp1aWNl/ci1taXhlci1ncmlu/ZGVyLXBhY2stc2Vy/dmljZXMtaWxsdXN0/cmF0aW9ucy00Njcz/NTc1LnBuZw';
+
 interface Service {
   id: string;
   name: string;
@@ -56,9 +58,14 @@ export default function HomeScreen() {
     router.push({ pathname: '/service-details', params: { serviceName } });
   };
 
-  // Filter services based on search
+  // Normaliza texto para ignorar tildes/acentos
+  function normalize(str: string) {
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+
+  // Filter services based on search, ignoring tildes/accents
   const filteredServices = services.filter(service =>
-    service.name.toLowerCase().includes(search.toLowerCase())
+    normalize(service.name).includes(normalize(search))
   );
 
   return (
@@ -134,7 +141,7 @@ export default function HomeScreen() {
             </ThemedText>
             <TouchableOpacity style={styles.specialOfferCard}>
               <Image
-                source={require('@/assets/images/special-offer.png')}
+                source={{ uri: IMAGE_URL }}
                 style={styles.specialOfferImage}
               />
               <View style={styles.specialOfferTextContainer}>

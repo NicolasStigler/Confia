@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -16,6 +17,7 @@ import {
   useTheme
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { fetchRegister } from '../api/api';
 import { ArrowLeftIcon } from '../components/Icons';
 
 interface AppCustomNamedColors {
@@ -45,6 +47,7 @@ export default function ClientRegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [address, setAddress] = useState('');
+  const [district, setDistrict] = useState('');
 
   const background = theme.colors.clientPageBg || (theme.dark ? '#111c22' : '#FFFFFF');
   const inputBackground = theme.colors.clientInputBg || (theme.dark ? '#243b47' : '#F0F0F0');
@@ -59,7 +62,7 @@ export default function ClientRegisterScreen() {
     age &&
     email &&
     password &&
-    address;
+    (isWorker ? true : (district && address));
 
   const handleAge = (t: string) => {
     const digits = t.replace(/\D/g, '').slice(0, 3);
@@ -79,18 +82,21 @@ export default function ClientRegisterScreen() {
 
     if (!isWorker) {
       data.direccion = address;
+      data.district = { name: district };
     }
 
     try {
       const role = await fetchRegister(data);
-      if (role) {
+      if (role === 'ROLE_CLIENT') {
         router.push('(client)');
+      } else if (role === 'ROLE_WORKER') {
+        router.push('(provider)');
       } else {
-        alert('Registration failed: no token received');
+        Alert.alert('Registration Failed', 'No token received. Please try again.');
       }
     } catch (error: any) {
       console.error('Registration error:', error?.message || error);
-      alert('Registration failed: ' + (error?.message || 'unknown error'));
+      Alert.alert('Registration Failed', error?.message || 'Unknown error.');
     }
   };
 
@@ -182,11 +188,15 @@ export default function ClientRegisterScreen() {
   const appbarHeight = 56;
   const keyboardOffset = Platform.OS === 'ios' ? appbarHeight : 0;
 
+  const ArrowIcon = useCallback(() => (
+    <ArrowLeftIcon color={textPrimary} size={24} />
+  ), [textPrimary]);
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <Appbar.Header style={styles.appbarHeader} mode="center-aligned" dense statusBarHeight={0}>
         <Appbar.Action
-          icon={() => <ArrowLeftIcon color={textPrimary} size={24} />}
+          icon={ArrowIcon}
           onPress={() => router.back()}
           rippleColor="transparent"
         />
@@ -274,6 +284,28 @@ export default function ClientRegisterScreen() {
               {...commonInputProps}
             />
           </View>
+          {!isWorker && (
+            <>
+              <View style={styles.inputContainer}>
+                <TextInput
+                  label="District"
+                  value={district}
+                  onChangeText={setDistrict}
+                  autoCapitalize="words"
+                  {...commonInputProps}
+                />
+              </View>
+              <View style={styles.inputContainer}>
+                <TextInput
+                  label="Direccion"
+                  value={address}
+                  onChangeText={setAddress}
+                  autoCapitalize="words"
+                  {...commonInputProps}
+                />
+              </View>
+            </>
+          )}
         </ScrollView>
 
         <View style={styles.bottomContainer}>

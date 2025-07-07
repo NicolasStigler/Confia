@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
@@ -54,7 +55,7 @@ export default function Profile() {
 
   const handleLogout = async () => {
     await SecureStore.deleteItemAsync("token");
-    router.replace("/login");
+    router.replace("/landing");
   };
 
   const handleEditProfile = () => setEditing(true);
@@ -96,7 +97,13 @@ export default function Profile() {
       quality: 0.7,
     });
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      setImage(result.assets[0].uri);
+      const asset = result.assets[0];
+      const manipulated = await ImageManipulator.manipulateAsync(
+        asset.uri,
+        [{ resize: { width: 600 } }],
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      setImage(manipulated.uri);
     }
   };
 
@@ -107,7 +114,13 @@ export default function Profile() {
       quality: 0.7,
     });
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      setImage(result.assets[0].uri);
+      const asset = result.assets[0];
+      const manipulated = await ImageManipulator.manipulateAsync(
+        asset.uri,
+        [{ resize: { width: 600 } }],
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      setImage(manipulated.uri);
     }
   };
 
@@ -153,8 +166,9 @@ export default function Profile() {
         <View style={styles.avatarSection}>
           <View style={styles.avatarCircle}>
             <TouchableOpacity
-              onPress={handlePickImage}
-              onLongPress={handleTakePhoto}
+              onPress={editing ? handlePickImage : undefined}
+              onLongPress={editing ? handleTakePhoto : undefined}
+              disabled={!editing}
             >
               <Image
                 source={image ? { uri: image } : NoPhotoImage}
@@ -163,21 +177,25 @@ export default function Profile() {
               />
             </TouchableOpacity>
           </View>
-          <TouchableOpacity onPress={handlePickImage} style={{ marginBottom: 8 }}>
-            <Text style={{ color: "#2563EB", fontWeight: "bold" }}>
-              Cambiar foto
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleTakePhoto} style={{ marginBottom: 8 }}>
-            <Text style={{ color: "#2563EB", fontWeight: "bold" }}>
-              Tomar foto
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleSaveImage} style={{ marginBottom: 8 }}>
-            <Text style={{ color: "#2563EB", fontWeight: "bold" }}>
-              Guardar foto
-            </Text>
-          </TouchableOpacity>
+          {editing && (
+            <>
+              <TouchableOpacity onPress={handlePickImage} style={styles.avatarButton}>
+                <Text style={styles.avatarButtonText}>
+                  Cambiar foto
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleTakePhoto} style={styles.avatarButton}>
+                <Text style={styles.avatarButtonText}>
+                  Tomar foto
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleSaveImage} style={styles.avatarButton}>
+                <Text style={styles.avatarButtonText}>
+                  Guardar foto
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
           <Text style={styles.profileName}>
             {editing ? (
               <TextInput
@@ -244,8 +262,6 @@ export default function Profile() {
             </>
           ) : (
             <>
-              <ProfileRow label="Email" value={client.email || "-"} />
-              <ProfileRow label="Phone Number" value={client.phone || "-"} />
               <ProfileRow label="Address" value={client.direccion || "-"} />
               <ProfileRow label="Distrito" value={client.distrito_vive?.name || "-"} />
               <ProfileRow label="Edad" value={client.age ? client.age.toString() : "-"} />
@@ -265,7 +281,7 @@ export default function Profile() {
           </View>
           <View style={styles.settingRow}>
             <Text style={styles.labelText}>Language</Text>
-            <Text style={styles.valueText}>Spanish</Text>
+            <Text style={styles.valueText}>English</Text>
           </View>
         </View>
         {editing ? (
@@ -474,6 +490,22 @@ const styles = StyleSheet.create({
   logoutText: {
     color: "#F87171",
     fontSize: 18,
+    fontWeight: "bold",
+  },
+  avatarButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "center",
+    backgroundColor: "#2563EB",
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 30,
+    marginBottom: 8,
+    marginTop: 2,
+  },
+  avatarButtonText: {
+    color: "#fff",
+    fontSize: 16,
     fontWeight: "bold",
   },
 });

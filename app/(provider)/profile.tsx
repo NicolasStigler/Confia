@@ -46,7 +46,7 @@ export default function Profile() {
 
   const handleLogout = async () => {
     await SecureStore.deleteItemAsync("token");
-    router.replace("/login");
+    router.replace("/landing");
   };
 
   const handleSaveProfile = async () => {
@@ -121,7 +121,11 @@ export default function Profile() {
         </View>
         <View style={styles.avatarSection}>
           <View style={styles.avatarCircle}>
-            <TouchableOpacity onPress={handlePickImage} onLongPress={handleTakePhoto}>
+            <TouchableOpacity
+              onPress={editing ? handlePickImage : undefined}
+              onLongPress={editing ? handleTakePhoto : undefined}
+              disabled={!editing}
+            >
               <Image
                 source={image ? { uri: image } : NoPhotoImage}
                 style={styles.avatar}
@@ -129,15 +133,19 @@ export default function Profile() {
               />
             </TouchableOpacity>
           </View>
-          <TouchableOpacity onPress={handlePickImage} style={{ marginBottom: 8 }}>
-            <Text style={{ color: '#2563EB', fontWeight: 'bold' }}>Cambiar foto</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleTakePhoto} style={{ marginBottom: 8 }}>
-            <Text style={{ color: '#2563EB', fontWeight: 'bold' }}>Tomar foto</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleSaveImage} style={{ marginBottom: 8 }}>
-            <Text style={{ color: '#2563EB', fontWeight: 'bold' }}>Guardar foto</Text>
-          </TouchableOpacity>
+          {editing && (
+            <>
+              <TouchableOpacity onPress={handlePickImage} style={{ marginBottom: 8 }}>
+                <Text style={{ color: '#2563EB', fontWeight: 'bold' }}>Cambiar foto</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleTakePhoto} style={{ marginBottom: 8 }}>
+                <Text style={{ color: '#2563EB', fontWeight: 'bold' }}>Tomar foto</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleSaveImage} style={{ marginBottom: 8 }}>
+                <Text style={{ color: '#2563EB', fontWeight: 'bold' }}>Guardar foto</Text>
+              </TouchableOpacity>
+            </>
+          )}
           {editing ? (
             <>
               <TextInput
@@ -181,10 +189,6 @@ export default function Profile() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Personal Information</Text>
-          <ProfileRow label="Email" value={worker.email || "-"} />
-          <ProfileRow label="Phone Number" value={worker.phone || "-"} />
-          <ProfileRow label="Address" value={worker.direccion || "-"} />
-          <ProfileRow label="Distrito" value={worker.distrito_vive?.name || "-"} />
           <ProfileRow label="Edad" value={worker.age ? worker.age.toString() : "-"} />
           <ProfileRow label="Rol" value={worker.role || "-"} />
           <ProfileRow label="Calificación Promedio" value={worker.averageRating ? worker.averageRating.toString() : "-"} />

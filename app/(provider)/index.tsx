@@ -26,6 +26,7 @@ export default function HomeScreen() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState<string>('');
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -58,6 +59,16 @@ export default function HomeScreen() {
     router.push('add-service'); // Adjust route as needed
   };
 
+  // Normaliza texto para ignorar tildes/acentos
+  function normalize(str: string) {
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+
+  // Filter services based on search, ignoring tildes/accents
+  const filteredServices = services.filter(service =>
+    normalize(service.name).includes(normalize(search))
+  );
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <ThemedView style={styles.container}>
@@ -76,6 +87,8 @@ export default function HomeScreen() {
             placeholder="Search for services"
             placeholderTextColor="#888"
             style={styles.searchInput}
+            value={search}
+            onChangeText={setSearch}
           />
         </View>
 
@@ -96,21 +109,27 @@ export default function HomeScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalScroll}
               >
-                {services.map((service, idx) => (
-                  <TouchableOpacity
-                    key={service.id ?? service.name ?? idx}
-                    style={styles.serviceCard}
-                    onPress={() => handleServicePress(service.name)}
-                  >
-                    <Image
-                      source={{ uri: service.image }}
-                      style={styles.serviceImage}
-                    />
-                    <ThemedText style={styles.serviceTitle}>
-                      {service.name}
-                    </ThemedText>
-                  </TouchableOpacity>
-                ))}
+                {filteredServices.length === 0 ? (
+                  <ThemedText style={{ color: '#fff', padding: 20 }}>
+                    No services found.
+                  </ThemedText>
+                ) : (
+                  filteredServices.map((service, idx) => (
+                    <TouchableOpacity
+                      key={service.id ?? service.name ?? idx}
+                      style={styles.serviceCard}
+                      onPress={() => handleServicePress(service.name)}
+                    >
+                      <Image
+                        source={{ uri: service.image }}
+                        style={styles.serviceImage}
+                      />
+                      <ThemedText style={styles.serviceTitle}>
+                        {service.name}
+                      </ThemedText>
+                    </TouchableOpacity>
+                  ))
+                )}
               </ScrollView>
             )}
           </ThemedView>

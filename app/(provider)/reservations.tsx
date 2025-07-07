@@ -7,11 +7,7 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-// import { fetchGetWorkerAppointmentsByStatus, fetchWorkerUpdateCitaStatus } from '../../api/api';
-
-// Dummy API functions for structure (replace with real ones)
-const fetchGetWorkerAppointmentsByStatus = async (status: string, date: string) => [];
-const fetchWorkerUpdateCitaStatus = async (id: number, status: string) => {};
+import { fetchGetWorkerAppointmentsByStatus, fetchWorkerUpdateCitaStatus } from '../../api/api';
 
 interface Appointment {
   id: string;
