@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
@@ -12,10 +13,14 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { fetchGetWorkerMe, fetchUpdateWorkerImage, fetchUpdateWorkerProfile } from "../../api/api";
+import {
+  fetchGetWorkerMe,
+  fetchUpdateWorkerImage,
+  fetchUpdateWorkerProfile,
+} from "../../api/api";
 import NoPhotoImage from "../../assets/images/avatar.png";
 
 export default function Profile() {
@@ -33,10 +38,10 @@ export default function Profile() {
       try {
         const data = await fetchGetWorkerMe();
         setWorker(data);
-        setFirstname(data.firstname);
-        setLastname(data.lastname);
-        setAge(data.age ? data.age.toString() : "");
-        setImage(data.profileImage);
+        setFirstname(data.firstname || "");
+        setLastname(data.lastname || "");
+        setAge(data.age ? String(data.age) : "");
+        setImage(data.profileImage || null);
       } catch (error) {
         Alert.alert("Error", "No se pudo cargar la información del perfil.");
       }
@@ -49,30 +54,30 @@ export default function Profile() {
     router.replace("/landing");
   };
 
-  const handleSaveProfile = async () => {
-    const workerProfileToUpdate = {
-      firstname,
-      lastname,
-      age: parseInt(age, 10),
-    };
-    try {
-      const updatedWorker = await fetchUpdateWorkerProfile(workerProfileToUpdate);
-      setWorker(updatedWorker);
-      Alert.alert("Perfil guardado");
-      setEditing(false);
-    } catch (error) {
-      Alert.alert("Error", "El perfil no se pudo guardar");
+  const handleEditProfile = () => setEditing(true);
+  const handleCancelEdit = () => {
+    setEditing(false);
+    if (worker) {
+      setFirstname(worker.firstname || "");
+      setLastname(worker.lastname || "");
+      setAge(worker.age ? String(worker.age) : "");
+      setImage(worker.profileImage || null);
     }
   };
 
-  const handleSaveImage = async () => {
-    if (image) {
-      try {
-        await fetchUpdateWorkerImage(image);
-        Alert.alert("Foto de perfil actualizada");
-      } catch (error) {
-        Alert.alert("Error", "No se pudo actualizar la foto de perfil");
-      }
+  const handleSaveProfile = async () => {
+    try {
+      await fetchUpdateWorkerProfile({
+        firstname,
+        lastname,
+        age: parseInt(age, 10),
+      });
+      setEditing(false);
+      const updated = await fetchGetWorkerMe();
+      setWorker(updated);
+      Alert.alert("Perfil actualizado");
+    } catch (e) {
+      Alert.alert("Error", "No se pudo actualizar el perfil");
     }
   };
 
@@ -84,7 +89,13 @@ export default function Profile() {
       quality: 0.7,
     });
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      setImage(result.assets[0].uri);
+      const asset = result.assets[0];
+      const manipulated = await ImageManipulator.manipulateAsync(
+        asset.uri,
+        [{ resize: { width: 600 } }],
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      setImage(manipulated.uri);
     }
   };
 
@@ -95,7 +106,26 @@ export default function Profile() {
       quality: 0.7,
     });
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      setImage(result.assets[0].uri);
+      const asset = result.assets[0];
+      const manipulated = await ImageManipulator.manipulateAsync(
+        asset.uri,
+        [{ resize: { width: 600 } }],
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      setImage(manipulated.uri);
+    }
+  };
+
+  const handleSaveImage = async () => {
+    if (image && image !== worker?.profileImage) {
+      try {
+        await fetchUpdateWorkerImage(image);
+        const updated = await fetchGetWorkerMe();
+        setWorker(updated);
+        Alert.alert("Foto de perfil actualizada");
+      } catch (e) {
+        Alert.alert("Error", "No se pudo actualizar la foto de perfil");
+      }
     }
   };
 
@@ -111,9 +141,15 @@ export default function Profile() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.headerContainer}>
-          <TouchableOpacity style={styles.headerBack} onPress={() => router.back()}>
+          <TouchableOpacity
+            style={styles.headerBack}
+            onPress={() => router.back()}
+          >
             <Ionicons name="arrow-back" size={28} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Account</Text>
@@ -135,65 +171,83 @@ export default function Profile() {
           </View>
           {editing && (
             <>
-              <TouchableOpacity onPress={handlePickImage} style={{ marginBottom: 8 }}>
-                <Text style={{ color: '#2563EB', fontWeight: 'bold' }}>Cambiar foto</Text>
+              <TouchableOpacity onPress={handlePickImage} style={styles.avatarButton}>
+                <Text style={styles.avatarButtonText}>
+                  Cambiar foto
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleTakePhoto} style={{ marginBottom: 8 }}>
-                <Text style={{ color: '#2563EB', fontWeight: 'bold' }}>Tomar foto</Text>
+              <TouchableOpacity onPress={handleTakePhoto} style={styles.avatarButton}>
+                <Text style={styles.avatarButtonText}>
+                  Tomar foto
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleSaveImage} style={{ marginBottom: 8 }}>
-                <Text style={{ color: '#2563EB', fontWeight: 'bold' }}>Guardar foto</Text>
+              <TouchableOpacity onPress={handleSaveImage} style={styles.avatarButton}>
+                <Text style={styles.avatarButtonText}>
+                  Guardar foto
+                </Text>
               </TouchableOpacity>
             </>
           )}
-          {editing ? (
-            <>
+          <Text style={styles.profileName}>
+            {editing ? (
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.profileName,
+                  {
+                    backgroundColor: "#222",
+                    color: "#fff",
+                    borderRadius: 8,
+                    paddingHorizontal: 8,
+                  },
+                ]}
                 value={firstname}
                 onChangeText={setFirstname}
-                placeholder="First Name"
+                placeholder="Nombre"
                 placeholderTextColor="#B9D4E8"
               />
-              <TextInput
-                style={styles.input}
+            ) : (
+              `${worker.firstname} ${worker.lastname}`
+            )}
+          </Text>
+          <Text style={styles.memberSince}>
+            Miembro desde{" "}
+            {worker.createdAt
+              ? new Date(worker.createdAt).getFullYear()
+              : "2025"}
+          </Text>
+        </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Personal Information</Text>
+          {editing ? (
+            <>
+              <ProfileRow
+                label="Nombre"
+                value={firstname}
+                editable
+                onChangeText={setFirstname}
+              />
+              <ProfileRow
+                label="Apellido"
                 value={lastname}
+                editable
                 onChangeText={setLastname}
-                placeholder="Last Name"
-                placeholderTextColor="#B9D4E8"
               />
-              <TextInput
-                style={styles.input}
+              <ProfileRow
+                label="Edad"
                 value={age}
+                editable
                 onChangeText={setAge}
-                placeholder="Age"
-                placeholderTextColor="#B9D4E8"
                 keyboardType="numeric"
               />
-              <TouchableOpacity style={styles.saveButton} onPress={handleSaveProfile}>
-                <Text style={styles.saveButtonText}>Guardar Perfil</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.saveButton} onPress={() => setEditing(false)}>
-                <Text style={styles.saveButtonText}>Cancelar</Text>
-              </TouchableOpacity>
             </>
           ) : (
             <>
-              <Text style={styles.profileName}>{worker.firstname} {worker.lastname}</Text>
-              <Text style={styles.memberSince}>
-                Miembro desde {worker.createdAt ? new Date(worker.createdAt).getFullYear() : "2025"}
-              </Text>
+              <ProfileRow label="Rol" value={worker.role || "-"} />
+              <ProfileRow label="Edad" value={worker.age ? worker.age.toString() : "-"} />
+              <ProfileRow label="Calificación Promedio" value={worker.averageRating ? worker.averageRating.toString() : "-"} />
             </>
           )}
         </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Personal Information</Text>
-          <ProfileRow label="Edad" value={worker.age ? worker.age.toString() : "-"} />
-          <ProfileRow label="Rol" value={worker.role || "-"} />
-          <ProfileRow label="Calificación Promedio" value={worker.averageRating ? worker.averageRating.toString() : "-"} />
-        </View>
-
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>App Settings</Text>
           <View style={styles.settingRow}>
@@ -210,17 +264,50 @@ export default function Profile() {
             <Text style={styles.valueText}>Spanish</Text>
           </View>
         </View>
-
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={22} color="#F87171" style={{ marginRight: 10 }} />
-          <Text style={styles.logoutText}>Log out</Text>
-        </TouchableOpacity>
-        {editing ? null : (
-          <TouchableOpacity style={styles.editButton} onPress={() => setEditing(true)}>
-            <Ionicons name="create-outline" size={22} color="#2563EB" style={{ marginRight: 10 }} />
-            <Text style={[styles.editButtonText, { color: '#2563EB' }]}>Editar Perfil</Text>
+        {editing ? (
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "center",
+              gap: 16,
+            }}
+          >
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={handleSaveProfile}
+            >
+              <Text style={styles.logoutText}>Guardar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={handleCancelEdit}
+            >
+              <Text style={styles.logoutText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleEditProfile}
+          >
+            <Ionicons
+              name="create-outline"
+              size={22}
+              color="#2563EB"
+              style={{ marginRight: 10 }}
+            />
+            <Text style={[styles.logoutText, { color: "#2563EB" }]}>Editar Perfil</Text>
           </TouchableOpacity>
         )}
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Ionicons
+            name="log-out-outline"
+            size={22}
+            color="#F87171"
+            style={{ marginRight: 10 }}
+          />
+          <Text style={styles.logoutText}>Log out</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -229,15 +316,39 @@ export default function Profile() {
 function ProfileRow({
   label,
   value,
+  editable,
+  onChangeText,
+  keyboardType,
 }: {
   label: string;
   value: string;
+  editable?: boolean;
+  onChangeText?: (v: string) => void;
+  keyboardType?: string;
 }) {
   return (
     <View style={styles.row}>
       <View>
         <Text style={styles.labelText}>{label}</Text>
-        <Text style={styles.valueText}>{value}</Text>
+        {editable ? (
+          <TextInput
+            style={{
+              color: "#fff",
+              backgroundColor: "#222",
+              borderRadius: 8,
+              paddingHorizontal: 8,
+              marginTop: 2,
+              minWidth: 120,
+            }}
+            value={value}
+            onChangeText={onChangeText}
+            keyboardType={keyboardType}
+            placeholder={label}
+            placeholderTextColor="#B9D4E8"
+          />
+        ) : (
+          <Text style={styles.valueText}>{value}</Text>
+        )}
       </View>
     </View>
   );
@@ -359,44 +470,20 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
-  editButton: {
-    alignSelf: 'center',
-    backgroundColor: '#243B47',
+  avatarButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "center",
+    backgroundColor: "#2563EB",
     paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 30,
-    marginBottom: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
+    marginBottom: 8,
+    marginTop: 2,
   },
-  editButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  input: {
-    width: '80%',
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#B9D4E8',
-    borderRadius: 5,
-    marginBottom: 10,
-    color: '#fff',
-    backgroundColor: '#1C2830',
-    alignSelf: 'center',
-    fontSize: 18,
-  },
-  saveButton: {
-    alignSelf: 'center',
-    backgroundColor: '#2563EB',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 30,
-    marginBottom: 24,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
+  avatarButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });

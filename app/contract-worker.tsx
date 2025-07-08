@@ -5,21 +5,21 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Image,
-    Platform,
-    StyleSheet,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Platform,
+  StyleSheet,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-    fetchCreateAppointment,
-    fetchGetWorkerSchedulesBySevenDays,
-    fetchGetWorkerServiceFinalPage,
-    getRoleBasedOnToken,
+  fetchCreateAppointment,
+  fetchGetWorkerSchedulesBySevenDays,
+  fetchGetWorkerServiceFinalPage,
+  getRoleBasedOnToken,
 } from '../api/api';
 
 export default function ContractWorkerScreen() {
@@ -177,56 +177,75 @@ export default function ContractWorkerScreen() {
           <ThemedView style={styles.detailsContainer}>
             <Image
               source={workerDetails.worker.profileImage ? { uri: workerDetails.worker.profileImage } : require('../assets/images/avatar.png')}
-              style={styles.profileImage}
+              style={[styles.profileImage, { width: 60, height: 60, borderRadius: 30 }]}
             />
             <ThemedText style={styles.workerName}>{`${workerDetails.worker.firstname} ${workerDetails.worker.lastname}`}</ThemedText>
             <ThemedText style={styles.workerRating}>{`Calificación: ${workerDetails.worker.averageRating ?? 'N/A'}`}</ThemedText>
             <ThemedText style={styles.workerPrice}>{`Precio: ${workerDetails.price}`}</ThemedText>
             <ThemedText style={styles.workerDistricts}>Distritos:</ThemedText>
-            {workerDetails.distritos_atiende.map((district: any, index: number) => (
-              <ThemedText key={index} style={styles.districtName}>{district.name}</ThemedText>
-            ))}
+            <View style={{ width: '100%' }}>
+              <FlatList
+                data={workerDetails.distritos_atiende}
+                keyExtractor={(_, idx) => idx.toString()}
+                renderItem={({ item, index }) => (
+                  <ThemedText style={styles.districtName}>
+                    {item.name}{index < workerDetails.distritos_atiende.length - 1 ? ', ' : ''}
+                  </ThemedText>
+                )}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingVertical: 4, flexDirection: 'row', alignItems: 'center' }}
+                style={{ marginBottom: 8 }}
+              />
+            </View>
           </ThemedView>
         )}
 
         <ThemedView style={styles.datePickerContainer}>
-          <TouchableOpacity style={styles.dateButton} onPress={() => setShowStartDatePicker(true)}>
-            <ThemedText style={styles.dateButtonText}>Seleccionar fecha de inicio</ThemedText>
-          </TouchableOpacity>
-          {showStartDatePicker && (
-            <DateTimePicker
-              value={startDate}
-              mode="date"
-              display="default"
-              onChange={handleStartDateChange}
-            />
-          )}
-          <ThemedText style={styles.selectedDate}>{startDate.toDateString()}</ThemedText>
-
-          <TouchableOpacity style={styles.dateButton} onPress={() => setShowEndDatePicker(true)}>
-            <ThemedText style={styles.dateButtonText}>Seleccionar fecha de fin</ThemedText>
-          </TouchableOpacity>
-          {showEndDatePicker && (
-            <DateTimePicker
-              value={endDate}
-              mode="date"
-              display="default"
-              onChange={handleEndDateChange}
-            />
-          )}
-          <ThemedText style={styles.selectedDate}>{endDate.toDateString()}</ThemedText>
-
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flex: 1 }}>
+              <TouchableOpacity style={styles.dateButton} onPress={() => setShowStartDatePicker(true)}>
+                <ThemedText style={styles.dateButtonText}>Fecha de inicio</ThemedText>
+              </TouchableOpacity>
+              {showStartDatePicker && (
+                <DateTimePicker
+                  value={startDate}
+                  mode="date"
+                  display="default"
+                  onChange={handleStartDateChange}
+                />
+              )}
+              <ThemedText style={styles.selectedDate}>{startDate.toDateString()}</ThemedText>
+            </View>
+            <View style={{ flex: 1 }}>
+              <TouchableOpacity style={styles.dateButton} onPress={() => setShowEndDatePicker(true)}>
+                <ThemedText style={styles.dateButtonText}>Fecha de fin</ThemedText>
+              </TouchableOpacity>
+              {showEndDatePicker && (
+                <DateTimePicker
+                  value={endDate}
+                  mode="date"
+                  display="default"
+                  onChange={handleEndDateChange}
+                />
+              )}
+              <ThemedText style={styles.selectedDate}>{endDate.toDateString()}</ThemedText>
+            </View>
+          </View>
           <TouchableOpacity style={styles.searchButton} onPress={handleSearchSchedules}>
             <ThemedText style={styles.searchButtonText}>Buscar Horarios</ThemedText>
           </TouchableOpacity>
         </ThemedView>
 
-        <FlatList
-          data={schedules}
-          keyExtractor={(_, idx) => idx.toString()}
-          renderItem={renderScheduleItem}
-          contentContainerStyle={styles.list}
-        />
+        <View style={{ flex: 1, minHeight: 200 }}>
+          <FlatList
+            data={schedules}
+            keyExtractor={(_, idx) => idx.toString()}
+            renderItem={renderScheduleItem}
+            contentContainerStyle={styles.list}
+            style={{ flex: 1 }}
+          />
+        </View>
       </ThemedView>
     </SafeAreaView>
   );
@@ -270,9 +289,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   profileImage: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     marginBottom: 10,
     backgroundColor: '#222',
   },

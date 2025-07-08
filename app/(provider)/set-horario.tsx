@@ -2,61 +2,57 @@ import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Platform, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { fetchSetWorkerSchedule } from '../../api/api';
+import HourGrid from '../../components/HourGrid';
 import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
 import { useThemeColor } from '../../hooks/useThemeColor';
 
 const SetHorarioScreen = () => {
   const [fecha, setFecha] = useState(new Date());
-  const [horaDeInicio, setHoraDeInicio] = useState(new Date());
-  const [horaDeFin, setHoraDeFin] = useState(new Date());
   const [showFechaPicker, setShowFechaPicker] = useState(false);
-  const [showHoraDeInicioPicker, setShowHoraDeInicioPicker] = useState(false);
-  const [showHoraDeFinPicker, setShowHoraDeFinPicker] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedHours, setSelectedHours] = useState<number[]>([]);
   const router = useRouter();
   const primary = useThemeColor({}, 'tint');
   const bg = useThemeColor({}, 'background');
   const text = useThemeColor({}, 'text');
 
-  const handleFechaChange = (event, selectedDate) => {
-    if (Platform.OS === 'android') setShowFechaPicker(false);
-    if (selectedDate) setFecha(selectedDate);
-  };
-
-  const handleHoraDeInicioChange = (event, selectedTime) => {
-    if (Platform.OS === 'android') setShowHoraDeInicioPicker(false);
-    if (selectedTime) setHoraDeInicio(selectedTime);
-  };
-
-  const handleHoraDeFinChange = (event, selectedTime) => {
-    if (Platform.OS === 'android') setShowHoraDeFinPicker(false);
-    if (selectedTime) setHoraDeFin(selectedTime);
+  const handleSelectHour = (hour: number) => {
+    setSelectedHours(prev => {
+      if (prev.includes(hour)) {
+        return prev.filter(h => h !== hour);
+      } else {
+        return [...prev, hour];
+      }
+    });
   };
 
   const handleSubmit = async () => {
     setError('');
     setSuccess('');
-    if (horaDeInicio >= horaDeFin) {
-      setError('La hora de inicio debe ser antes de la hora de fin');
+    if (selectedHours.length === 0) {
+      setError('Selecciona al menos una hora');
       return;
     }
-    const scheduleData = {
-      fecha: fecha.toISOString().split('T')[0],
-      horaDeInicio: horaDeInicio.toTimeString().split(' ')[0],
-      horaDeFin: horaDeFin.toTimeString().split(' ')[0],
-    };
     try {
-      const status = await fetchSetWorkerSchedule(scheduleData);
-      if (status === 201) {
-        setSuccess('Horario creado correctamente');
-        setFecha(new Date());
-        setHoraDeInicio(new Date());
-        setHoraDeFin(new Date());
+      for (const hour of selectedHours) {
+        const start = new Date(selectedDate);
+        start.setHours(hour, 0, 0, 0);
+        const end = new Date(start);
+        end.setHours(start.getHours() + 1);
+        const scheduleData = {
+          fecha: start.toISOString().split('T')[0],
+          horaDeInicio: start.toTimeString().split(' ')[0],
+          horaDeFin: end.toTimeString().split(' ')[0],
+        };
+        await fetchSetWorkerSchedule(scheduleData);
       }
+      setSuccess('Horario(s) creado(s) correctamente');
+      setSelectedHours([]);
     } catch (error) {
       setError('No se pudo crear el horario');
     }
@@ -74,47 +70,24 @@ const SetHorarioScreen = () => {
       <View style={styles.inputGroup}>
         <ThemedText style={styles.label}>Fecha</ThemedText>
         <Pressable style={styles.input} onPress={() => setShowFechaPicker(true)}>
-          <ThemedText>{fecha.toLocaleDateString()}</ThemedText>
+          <ThemedText>{selectedDate.toLocaleDateString()}</ThemedText>
         </Pressable>
         {showFechaPicker && (
           <DateTimePicker
-            value={fecha}
+            value={selectedDate}
             mode="date"
             display="default"
-            onChange={handleFechaChange}
+            onChange={(event, date) => {
+              setShowFechaPicker(false);
+              if (date) setSelectedDate(date);
+            }}
             minimumDate={new Date()}
           />
         )}
       </View>
       <View style={styles.inputGroup}>
-        <ThemedText style={styles.label}>Hora de inicio</ThemedText>
-        <Pressable style={styles.input} onPress={() => setShowHoraDeInicioPicker(true)}>
-          <ThemedText>{horaDeInicio.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</ThemedText>
-        </Pressable>
-        {showHoraDeInicioPicker && (
-          <DateTimePicker
-            value={horaDeInicio}
-            mode="time"
-            display="default"
-            onChange={handleHoraDeInicioChange}
-            minuteInterval={60}
-          />
-        )}
-      </View>
-      <View style={styles.inputGroup}>
-        <ThemedText style={styles.label}>Hora de fin</ThemedText>
-        <Pressable style={styles.input} onPress={() => setShowHoraDeFinPicker(true)}>
-          <ThemedText>{horaDeFin.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</ThemedText>
-        </Pressable>
-        {showHoraDeFinPicker && (
-          <DateTimePicker
-            value={horaDeFin}
-            mode="time"
-            display="default"
-            onChange={handleHoraDeFinChange}
-            minuteInterval={60}
-          />
-        )}
+        <ThemedText style={styles.label}>Selecciona las horas</ThemedText>
+        <HourGrid selectedHours={selectedHours} onSelectHour={handleSelectHour} />
       </View>
       {error ? <ThemedText style={styles.error}>{error}</ThemedText> : null}
       {success ? <ThemedText style={styles.success}>{success}</ThemedText> : null}
